@@ -1,18 +1,18 @@
 import L from 'leaflet';
-import { createIcons, Zap, Locate, Search, MapPin, Navigation, Info } from 'lucide';
+import { createIcons, Zap, Locate, Search, MapPin, Navigation, Info, Map } from 'lucide';
 
 // Store state
 let map = null;
 let marker = null;
 let worker = null;
-let currentCoords = null;
 
 // Initialize Lucide Icons
 function initIcons() {
     createIcons({
-        icons: { Zap, Locate, Search, MapPin, Navigation, Info }
+        icons: { Zap, Locate, Search, MapPin, Navigation, Info, Map }
     });
 }
+
 
 // Initialize Leaflet Map
 function initMap() {
@@ -65,6 +65,15 @@ function onWorkerReady() {
 
 // Main logic entry
 function processLocation(lat, lng) {
+    // Transition from Start Panel to Results Panel
+    const startPanel = document.getElementById('start-panel');
+    const resultsPanel = document.getElementById('results-panel');
+    
+    if (startPanel) {
+        startPanel.classList.add('hidden');
+    }
+    resultsPanel.classList.remove('hidden');
+
     // Update marker
     if (!marker) {
         const icon = L.divIcon({
@@ -83,19 +92,23 @@ function processLocation(lat, lng) {
 
     // Call worker
     worker.postMessage({ type: 'PROCESS', lat, lng });
-    
-    // Update search UI
-    document.getElementById('search-input').value = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
 }
 
 // UI Helpers
 function displayResults(data) {
     const panel = document.getElementById('results-panel');
-    panel.classList.remove('hidden');
     
-    const { jurisdiction, nearestOffice, additionalSections } = data;
+    const { jurisdiction, nearestOffice, additionalSections, coords } = data;
 
-    let html = '';
+    let html = `
+        <div class="selection-header">
+            <i data-lucide="map-pin" class="icon-primary"></i>
+            <div class="selection-info">
+                <span class="selection-label">SELECTED LOCATION</span>
+                <span class="selection-coords">${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}</span>
+            </div>
+        </div>
+    `;
 
     if (jurisdiction) {
         html += `
@@ -171,7 +184,7 @@ function showError(msg) {
 }
 
 // GPS trigger
-document.getElementById('gps-btn').onclick = () => {
+function triggerGPS() {
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition((pos) => {
             const { latitude, longitude } = pos.coords;
@@ -181,11 +194,17 @@ document.getElementById('gps-btn').onclick = () => {
             alert('Geolocation failed: ' + err.message);
         });
     }
-};
+}
 
 // Start
 window.addEventListener('DOMContentLoaded', () => {
     initIcons();
     initMap();
     initWorker();
+
+    document.getElementById('main-gps-btn').onclick = triggerGPS;
+    
+    document.getElementById('explore-btn').onclick = () => {
+        document.getElementById('start-panel').classList.add('hidden');
+    };
 });

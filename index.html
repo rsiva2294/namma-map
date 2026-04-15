@@ -24,21 +24,24 @@
 
         <!-- Search / Info Panel -->
         <aside class="side-panel">
-            <div class="glass-panel search-panel">
-                <div class="search-box">
-                    <i data-lucide="search" class="icon-muted"></i>
-                    <input type="text" id="search-input" placeholder="Find by location..." readonly>
-                    <button id="gps-btn" title="Use current location">
+            <!-- Start Card (Choice Screen) -->
+            <div id="start-panel" class="glass-panel start-card">
+                <h2>Find Your Jurisdiction</h2>
+                <p>Select how you want to find your electricity section</p>
+                <div class="start-actions">
+                    <button id="main-gps-btn" class="primary-btn">
                         <i data-lucide="locate"></i>
+                        <span>📍 Use My Location</span>
                     </button>
-                </div>
-                <div class="instruction">
-                    <p>Tap anywhere on the map or use GPS to identify jurisdiction</p>
+                    <button id="explore-btn" class="secondary-btn">
+                        <i data-lucide="map"></i>
+                        <span>🗺️ Explore on Map</span>
+                    </button>
                 </div>
             </div>
 
-            <!-- Results Panel (initially hidden or empty) -->
             <div id="results-panel" class="results-container hidden">
+                <!-- Selected Location Header will go here -->
                 <!-- Data will be injected here -->
             </div>
         </aside>
