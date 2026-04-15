@@ -94,12 +94,20 @@ function processLocation(lat, lng) {
         return isPointInPolygon([lng, lat], b.geometry);
     });
 
-    // Priority logic: Corporation/Urban > Rural if multiple exist
-    // But we'll return all relevant ones, marking the primary match
-    const jurisdiction = matches.length > 0 ? formatJurisdiction(matches[0].properties) : null;
-    const additionalSections = matches.slice(1).map(m => formatJurisdiction(m.properties));
+    // 2. Priority logic: Corporation > Others
+    const sortedMatches = [...matches].sort((a, b) => {
+        const typeA = (a.properties.section_ty || '').toLowerCase();
+        const typeB = (b.properties.section_ty || '').toLowerCase();
+        
+        if (typeA.includes('corporation') && !typeB.includes('corporation')) return -1;
+        if (!typeA.includes('corporation') && typeB.includes('corporation')) return 1;
+        return 0;
+    });
 
-    // 2. Find nearest office
+    const jurisdiction = sortedMatches.length > 0 ? formatJurisdiction(sortedMatches[0].properties) : null;
+    const additionalSections = sortedMatches.slice(1).map(m => formatJurisdiction(m.properties));
+
+    // 3. Find nearest office
     let nearest = null;
     let minDistance = Infinity;
 

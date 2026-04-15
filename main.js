@@ -100,17 +100,39 @@ function displayResults(data) {
     if (jurisdiction) {
         html += `
             <div class="glass-panel jurisdiction-card card">
-                <h3><i data-lucide="zap"></i> Jurisdiction Found</h3>
+                <div class="card-header">
+                    <i data-lucide="zap" class="icon-primary"></i>
+                    <h3>Primary Jurisdiction</h3>
+                </div>
                 <div class="hierarchy-grid">
                     <div class="h-item"><span class="h-label">SECTION</span><span class="h-value">${jurisdiction.section}</span></div>
                     <div class="h-item"><span class="h-label">SUBDIVISION</span><span class="h-value">${jurisdiction.subdivision}</span></div>
                     <div class="h-item"><span class="h-label">DIVISION</span><span class="h-value">${jurisdiction.division}</span></div>
                     <div class="h-item"><span class="h-label">CIRCLE</span><span class="h-value">${jurisdiction.circle}</span></div>
                     <div class="h-item"><span class="h-label">REGION</span><span class="h-value">${jurisdiction.region}</span></div>
-                    <div class="h-item"><span class="h-label">CODE</span><span class="h-value">${jurisdiction.sectionCode}</span></div>
+                    <div class="h-item"><span class="h-label">TYPE</span><span class="h-value">${jurisdiction.type}</span></div>
                 </div>
             </div>
         `;
+
+        if (additionalSections && additionalSections.length > 0) {
+            html += `
+                <div class="glass-panel overlaps-card card">
+                    <div class="card-header">
+                        <i data-lucide="info" class="icon-muted"></i>
+                        <h3>Also Applicable Sections</h3>
+                    </div>
+                    <div class="overlaps-list">
+                        ${additionalSections.map(s => `
+                            <div class="overlap-item">
+                                <span class="overlap-name">${s.section}</span>
+                                <span class="overlap-detail">${s.subdivision} / ${s.division}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
     } else {
         html += `
             <div class="glass-panel jurisdiction-card card error">
@@ -123,11 +145,14 @@ function displayResults(data) {
         const navUrl = `https://www.google.com/maps/dir/?api=1&destination=${nearestOffice.coords[0]},${nearestOffice.coords[1]}`;
         html += `
             <div class="glass-panel office-card card">
-                <h3><i data-lucide="map-pin"></i> Nearest Section Office</h3>
+                <div class="card-header">
+                    <i data-lucide="map-pin" class="icon-primary"></i>
+                    <h3>Nearest Section Office</h3>
+                </div>
                 <div class="office-info">
                     <div class="office-name">${nearestOffice.name}</div>
-                    <div class="office-detail"><i data-lucide="navigation"></i> Approximately ${nearestOffice.distance} km away</div>
-                    <div class="office-detail"><i data-lucide="info"></i> ${nearestOffice.properties.subdivisio} / ${nearestOffice.properties.division_n}</div>
+                    <div class="office-detail"><i data-lucide="navigation" class="icon-muted"></i> Approximately ${nearestOffice.distance} km away</div>
+                    <div class="office-detail"><i data-lucide="info" class="icon-muted"></i> ${nearestOffice.properties.subdivisio} / ${nearestOffice.properties.division_n}</div>
                     <a href="${navUrl}" target="_blank" class="nav-btn">
                         <i data-lucide="navigation"></i> Get Directions
                     </a>

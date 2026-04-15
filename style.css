@@ -173,11 +173,47 @@ body {
   background: var(--glass-panel);
 }
 
-.jurisdiction-card h3 {
-  font-size: 0.8rem;
+.jurisdiction-card h3, .overlaps-card h3, .office-card h3 {
+  font-size: 0.85rem;
+  font-weight: 800;
   text-transform: uppercase;
-  color: var(--accent-secondary);
-  margin-bottom: 12px;
+  color: var(--text-main);
+  letter-spacing: 0.05em;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.overlaps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.overlap-item {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 10px 14px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  border-left: 3px solid var(--accent-secondary);
+}
+
+.overlap-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.overlap-detail {
+  font-size: 0.7rem;
+  color: var(--text-muted);
 }
 
 .hierarchy-grid {
