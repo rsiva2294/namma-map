@@ -1,5 +1,5 @@
 import L from 'leaflet';
-import { createIcons, Zap, Locate, Search, MapPin, Navigation, Info, Map } from 'lucide';
+import { createIcons, Zap, Locate, Search, MapPin, Navigation, Info, Map, AlertTriangle, RefreshCw } from 'lucide';
 
 // Store state
 let map = null;
@@ -9,7 +9,7 @@ let worker = null;
 // Initialize Lucide Icons
 function initIcons() {
     createIcons({
-        icons: { Zap, Locate, Search, MapPin, Navigation, Info, Map }
+        icons: { Zap, Locate, Search, MapPin, Navigation, Info, Map, AlertTriangle, RefreshCw }
     });
 }
 
@@ -74,6 +74,9 @@ function onWorkerReady() {
 
 // Main logic entry
 function processLocation(lat, lng) {
+    // Tamil Nadu Bounds Check
+    const isInsideTN = lat >= 8.0 && lat <= 14.0 && lng >= 75.0 && lng <= 81.0;
+
     // Transition from Start Panel to Results Panel
     const startPanel = document.getElementById('start-panel');
     const resultsPanel = document.getElementById('results-panel');
@@ -82,6 +85,11 @@ function processLocation(lat, lng) {
         startPanel.classList.add('hidden');
     }
     resultsPanel.classList.remove('hidden');
+
+    if (!isInsideTN) {
+        displayError("📍 Outside Supported Area", "We currently only support TNEB jurisdictions within Tamil Nadu. Please select a location within the state boundaries.");
+        return;
+    }
 
     // Update marker
     if (!marker) {
@@ -101,6 +109,24 @@ function processLocation(lat, lng) {
 
     // Call worker
     worker.postMessage({ type: 'PROCESS', lat, lng });
+}
+
+// Simple Error display
+function displayError(title, msg) {
+    const panel = document.getElementById('results-panel');
+    panel.innerHTML = `
+        <div class="glass-panel error-card card">
+            <div class="card-header">
+                <i data-lucide="alert-triangle" style="color: var(--danger)"></i>
+                <h3 style="color: var(--danger)">${title}</h3>
+            </div>
+            <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 20px;">${msg}</p>
+            <button onclick="location.reload()" class="secondary-btn" style="width: 100%">
+                <i data-lucide="refresh-cw"></i> Try Again
+            </button>
+        </div>
+    `;
+    initIcons();
 }
 
 // UI Helpers
