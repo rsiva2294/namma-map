@@ -115,43 +115,24 @@ function processLocation(lat, lng) {
     let matchMethod = 'PROXIMITY'; // Default
 
     if (jurisdiction) {
-        // TIER 1: Exact Composite Match (Code + Subdivision + Circle)
-        const exactMatch = offices.find(o => 
+        // SIMPLIFIED MATCH: Section Code + Region Name
+        const match = offices.find(o => 
             String(o.properties.section_co) === String(jurisdiction.sectionCode) &&
-            String(o.properties.subdivisio).toLowerCase() === String(jurisdiction.subdivision).toLowerCase() &&
-            String(o.properties.circle_nam).toLowerCase() === String(jurisdiction.circle).toLowerCase()
+            String(o.properties.region_nam || '').toLowerCase().trim() === String(jurisdiction.region || '').toLowerCase().trim()
         );
 
-        if (exactMatch) {
+        if (match) {
             nearest = {
-                name: exactMatch.properties.section_na,
-                distance: getDistance(lat, lng, exactMatch.geometry.coordinates[1], exactMatch.geometry.coordinates[0]).toFixed(2),
-                properties: exactMatch.properties,
-                coords: [exactMatch.geometry.coordinates[1], exactMatch.geometry.coordinates[0]]
+                name: match.properties.section_na,
+                distance: getDistance(lat, lng, match.geometry.coordinates[1], match.geometry.coordinates[0]).toFixed(2),
+                properties: match.properties,
+                coords: [match.geometry.coordinates[1], match.geometry.coordinates[0]]
             };
             matchMethod = 'OFFICIAL_HEADQUARTERS';
         } 
-        
-        // TIER 2: Contextual Match (Code + Subdivision) if Tier 1 fails
-        if (!nearest) {
-            const partialMatch = offices.find(o => 
-                String(o.properties.section_co) === String(jurisdiction.sectionCode) &&
-                String(o.properties.subdivisio).toLowerCase() === String(jurisdiction.subdivision).toLowerCase()
-            );
-
-            if (partialMatch) {
-                nearest = {
-                    name: partialMatch.properties.section_na,
-                    distance: getDistance(lat, lng, partialMatch.geometry.coordinates[1], partialMatch.geometry.coordinates[0]).toFixed(2),
-                    properties: partialMatch.properties,
-                    coords: [partialMatch.geometry.coordinates[1], partialMatch.geometry.coordinates[0]]
-                };
-                matchMethod = 'OFFICIAL_MATCH';
-            }
-        }
     }
 
-    // TIER 3: Proximity Fallback (Previous Logic) if Tiers 1 & 2 fail or no jurisdiction
+    // TIER 3: Proximity Fallback (Previous Logic) if match fails or no jurisdiction
     if (!nearest) {
         let minDistance = Infinity;
         for (const office of offices) {
