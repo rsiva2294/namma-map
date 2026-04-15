@@ -244,8 +244,7 @@ function displayResults(data) {
 
     if (nearestOffice) {
         const navUrl = `https://www.google.com/maps/dir/?api=1&destination=${nearestOffice.coords[0]},${nearestOffice.coords[1]}`;
-        const matchLabel = data.matchMethod === 'OFFICIAL_HEADQUARTERS' ? 'Headquarters' : 
-                          data.matchMethod === 'OFFICIAL_MATCH' ? 'Matched Section Office' : 'Nearest Office (Proximity)';
+        const matchLabel = data.matchMethod.includes('OFFICIAL') ? 'Matched' : 'Nearest Office (Proximity)';
         const labelClass = data.matchMethod.includes('OFFICIAL') ? 'status-official' : 'status-proximity';
 
         html += `
