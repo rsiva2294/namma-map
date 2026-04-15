@@ -182,7 +182,7 @@ function displayResults(data) {
         officeMarker = L.marker([nearestOffice.coords[0], nearestOffice.coords[1]], { icon: zapIcon }).addTo(map);
         
         const popupMsg = data.matchMethod.includes('OFFICIAL') 
-            ? `<b>${nearestOffice.name}</b><br>Official Section Office`
+            ? `<b>${nearestOffice.name}</b><br>Section Office`
             : `<b>${nearestOffice.name}</b><br>Nearest Section Office (Proximity Fallback)`;
         
         officeMarker.bindPopup(popupMsg);
@@ -244,7 +244,7 @@ function displayResults(data) {
 
     if (nearestOffice) {
         const navUrl = `https://www.google.com/maps/dir/?api=1&destination=${nearestOffice.coords[0]},${nearestOffice.coords[1]}`;
-        const matchLabel = data.matchMethod === 'OFFICIAL_HEADQUARTERS' ? 'Official Headquarters' : 
+        const matchLabel = data.matchMethod === 'OFFICIAL_HEADQUARTERS' ? 'Headquarters' : 
                           data.matchMethod === 'OFFICIAL_MATCH' ? 'Matched Section Office' : 'Nearest Office (Proximity)';
         const labelClass = data.matchMethod.includes('OFFICIAL') ? 'status-official' : 'status-proximity';
 
@@ -278,14 +278,47 @@ function showError(msg) {
 
 // GPS trigger
 function triggerGPS() {
+    const mainBtn = document.getElementById('main-gps-btn');
+    const fabBtn = document.getElementById('fab-gps');
+    
+    const setLoader = (loading) => {
+        [mainBtn, fabBtn].forEach(btn => {
+            if (!btn) return;
+            if (loading) {
+                btn.classList.add('loading-gps');
+                const span = btn.querySelector('span');
+                if (span) {
+                    btn._oldText = span.innerText;
+                    span.innerText = 'Detecting...';
+                }
+            } else {
+                btn.classList.remove('loading-gps');
+                const span = btn.querySelector('span');
+                if (span && btn._oldText) {
+                    span.innerText = btn._oldText;
+                }
+            }
+        });
+    };
+
     if (navigator.geolocation) {
+        setLoader(true);
         navigator.geolocation.getCurrentPosition((pos) => {
+            setLoader(false);
             const { latitude, longitude } = pos.coords;
             map.flyTo([latitude, longitude], 14);
             processLocation(latitude, longitude);
         }, (err) => {
-            alert('Geolocation failed: ' + err.message);
-        });
+            setLoader(false);
+            let msg = "Could not detect location.";
+            if (err.code === 1) msg = "Location access denied. Please enable GPS.";
+            else if (err.code === 2) msg = "Location unavailable. Check your network.";
+            else if (err.code === 3) msg = "GPS request timed out.";
+            
+            displayError("📍 GPS Error", msg);
+        }, { enableHighAccuracy: true, timeout: 10000 });
+    } else {
+        displayError("📍 Geolocation Not Supported", "Your browser does not support location services.");
     }
 }
 

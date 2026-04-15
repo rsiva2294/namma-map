@@ -193,6 +193,21 @@ body {
   box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4);
 }
 
+.loading-gps {
+    pointer-events: none;
+    opacity: 0.8;
+}
+
+.loading-gps i {
+    animation: spin-pulse 1s linear infinite;
+}
+
+@keyframes spin-pulse {
+    0% { transform: rotate(0deg) scale(1); }
+    50% { transform: rotate(180deg) scale(1.2); }
+    100% { transform: rotate(360deg) scale(1); }
+}
+
 .secondary-btn {
   background: rgba(0, 0, 0, 0.05);
   color: #0f172a;
