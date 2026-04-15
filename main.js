@@ -96,6 +96,7 @@ function processLocation(lat, lng) {
     
     if (startPanel) {
         startPanel.classList.add('hidden');
+        document.getElementById('fab-gps').classList.remove('hidden');
     }
     resultsPanel.classList.remove('hidden');
 
@@ -295,8 +296,10 @@ window.addEventListener('DOMContentLoaded', () => {
     initWorker();
 
     document.getElementById('main-gps-btn').onclick = triggerGPS;
+    document.getElementById('fab-gps').onclick = triggerGPS;
     
     document.getElementById('explore-btn').onclick = () => {
         document.getElementById('start-panel').classList.add('hidden');
+        document.getElementById('fab-gps').classList.remove('hidden');
     };
 });
