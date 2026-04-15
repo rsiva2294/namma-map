@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TNEB Jurisdiction Finder</title>
+    <meta name="description" content="Identify your exact TNEB electricity jurisdiction and locate the nearest office using real-time GIS data.">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+</head>
+<body class="dark-mode">
+    <div id="app">
+        <!-- Map Container -->
+        <div id="map"></div>
+
+        <!-- Floating UI Overlays -->
+        <header class="glass-panel main-header">
+            <div class="logo">
+                <i data-lucide="zap" class="icon-primary"></i>
+                <h1>TNEB Jurisdiction</h1>
+            </div>
+            <p class="subtitle">Official Finder Service</p>
+        </header>
+
+        <!-- Search / Info Panel -->
+        <aside class="side-panel">
+            <div class="glass-panel search-panel">
+                <div class="search-box">
+                    <i data-lucide="search" class="icon-muted"></i>
+                    <input type="text" id="search-input" placeholder="Find by location..." readonly>
+                    <button id="gps-btn" title="Use current location">
+                        <i data-lucide="locate"></i>
+                    </button>
+                </div>
+                <div class="instruction">
+                    <p>Tap anywhere on the map or use GPS to identify jurisdiction</p>
+                </div>
+            </div>
+
+            <!-- Results Panel (initially hidden or empty) -->
+            <div id="results-panel" class="results-container hidden">
+                <!-- Data will be injected here -->
+            </div>
+        </aside>
+
+        <!-- Loading Overlay -->
+        <div id="loading-overlay" class="overlay">
+            <div class="glass-panel loader-card">
+                <div class="spinner"></div>
+                <h2>Initializing GIS Engine</h2>
+                <p>Indexing boundaries and offices for high performance...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="main.js" type="module"></script>
+</body>
+</html>

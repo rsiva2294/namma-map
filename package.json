@@ -1,0 +1,21 @@
+{
+  "name": "tneb-section",
+  "version": "1.0.0",
+  "description": "",
+  "type": "commonjs",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "leaflet": "^1.9.4",
+    "lucide": "^1.8.0"
+  },
+  "devDependencies": {
+    "vite": "^8.0.8"
+  }
+}
