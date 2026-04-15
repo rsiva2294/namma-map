@@ -172,7 +172,12 @@ function displayResults(data) {
             iconAnchor: [16, 32]
         });
         officeMarker = L.marker([nearestOffice.coords[0], nearestOffice.coords[1]], { icon: zapIcon }).addTo(map);
-        officeMarker.bindPopup(`<b>${nearestOffice.name}</b><br>Nearest Section Office`);
+        
+        const popupMsg = data.matchMethod.includes('OFFICIAL') 
+            ? `<b>${nearestOffice.name}</b><br>Official Section Office`
+            : `<b>${nearestOffice.name}</b><br>Nearest Section Office (Proximity Fallback)`;
+        
+        officeMarker.bindPopup(popupMsg);
     }
 
     let html = `
@@ -231,11 +236,16 @@ function displayResults(data) {
 
     if (nearestOffice) {
         const navUrl = `https://www.google.com/maps/dir/?api=1&destination=${nearestOffice.coords[0]},${nearestOffice.coords[1]}`;
+        const matchLabel = data.matchMethod === 'OFFICIAL_HEADQUARTERS' ? 'Official Headquarters' : 
+                          data.matchMethod === 'OFFICIAL_MATCH' ? 'Matched Section Office' : 'Nearest Office (Proximity)';
+        const labelClass = data.matchMethod.includes('OFFICIAL') ? 'status-official' : 'status-proximity';
+
         html += `
             <div class="glass-panel office-card card">
                 <div class="card-header">
                     <i data-lucide="map-pin" class="icon-primary"></i>
-                    <h3>Nearest Section Office</h3>
+                    <h3>Section Office</h3>
+                    <span class="badge ${labelClass}">${matchLabel}</span>
                 </div>
                 <div class="office-info">
                     <div class="office-name">${nearestOffice.name}</div>

@@ -110,22 +110,64 @@ function processLocation(lat, lng) {
     } : null;
     const additionalSections = sortedMatches.slice(1).map(m => formatJurisdiction(m.properties));
 
-    // 3. Find nearest office
+    // 3. Find Office with Tiered Logic
     let nearest = null;
-    let minDistance = Infinity;
+    let matchMethod = 'PROXIMITY'; // Default
 
-    for (const office of offices) {
-        const [olng, olat] = office.geometry.coordinates;
-        const dist = getDistance(lat, lng, olat, olng);
-        if (dist < minDistance) {
-            minDistance = dist;
+    if (jurisdiction) {
+        // TIER 1: Exact Composite Match (Code + Subdivision + Circle)
+        const exactMatch = offices.find(o => 
+            String(o.properties.section_co) === String(jurisdiction.sectionCode) &&
+            String(o.properties.subdivisio).toLowerCase() === String(jurisdiction.subdivision).toLowerCase() &&
+            String(o.properties.circle_nam).toLowerCase() === String(jurisdiction.circle).toLowerCase()
+        );
+
+        if (exactMatch) {
             nearest = {
-                name: office.properties.section_na,
-                distance: dist.toFixed(2),
-                properties: office.properties,
-                coords: [olat, olng]
+                name: exactMatch.properties.section_na,
+                distance: getDistance(lat, lng, exactMatch.geometry.coordinates[1], exactMatch.geometry.coordinates[0]).toFixed(2),
+                properties: exactMatch.properties,
+                coords: [exactMatch.geometry.coordinates[1], exactMatch.geometry.coordinates[0]]
             };
+            matchMethod = 'OFFICIAL_HEADQUARTERS';
+        } 
+        
+        // TIER 2: Contextual Match (Code + Subdivision) if Tier 1 fails
+        if (!nearest) {
+            const partialMatch = offices.find(o => 
+                String(o.properties.section_co) === String(jurisdiction.sectionCode) &&
+                String(o.properties.subdivisio).toLowerCase() === String(jurisdiction.subdivision).toLowerCase()
+            );
+
+            if (partialMatch) {
+                nearest = {
+                    name: partialMatch.properties.section_na,
+                    distance: getDistance(lat, lng, partialMatch.geometry.coordinates[1], partialMatch.geometry.coordinates[0]).toFixed(2),
+                    properties: partialMatch.properties,
+                    coords: [partialMatch.geometry.coordinates[1], partialMatch.geometry.coordinates[0]]
+                };
+                matchMethod = 'OFFICIAL_MATCH';
+            }
         }
+    }
+
+    // TIER 3: Proximity Fallback (Previous Logic) if Tiers 1 & 2 fail or no jurisdiction
+    if (!nearest) {
+        let minDistance = Infinity;
+        for (const office of offices) {
+            const [olng, olat] = office.geometry.coordinates;
+            const dist = getDistance(lat, lng, olat, olng);
+            if (dist < minDistance) {
+                minDistance = dist;
+                nearest = {
+                    name: office.properties.section_na,
+                    distance: dist.toFixed(2),
+                    properties: office.properties,
+                    coords: [olat, olng]
+                };
+            }
+        }
+        matchMethod = 'NEAREST_PROXIMITY';
     }
 
     self.postMessage({
@@ -134,6 +176,7 @@ function processLocation(lat, lng) {
             jurisdiction,
             additionalSections,
             nearestOffice: nearest,
+            matchMethod,
             coords: { lat, lng }
         }
     });

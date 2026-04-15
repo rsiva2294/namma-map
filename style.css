@@ -266,6 +266,28 @@ body {
   text-transform: uppercase;
   color: var(--text-main);
   letter-spacing: 0.05em;
+  flex: 1;
+}
+
+.badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 6px;
+  text-transform: none;
+  letter-spacing: 0px;
+}
+
+.status-official {
+  background: rgba(22, 163, 74, 0.1);
+  color: var(--success);
+  border: 1px solid rgba(22, 163, 74, 0.2);
+}
+
+.status-proximity {
+  background: rgba(37, 99, 235, 0.1);
+  color: var(--accent-primary);
+  border: 1px solid rgba(37, 99, 235, 0.2);
 }
 
 .card-header {
