@@ -42,17 +42,29 @@ function formatJurisdiction(props) {
     };
 }
 
-// Handle initialization
+// Handle initialization with Persistent Caching
 async function init() {
-    try {
-        console.log('Worker: Initializing data...');
-        const [boundaryRes, officeRes] = await Promise.all([
-            fetch('TNEB_Section_Boundary.json'),
-            fetch('tneb_section_office.json')
-        ]);
+    const CACHE_NAME = 'tneb-gis-v1';
+    const FILES = ['TNEB_Section_Boundary.json', 'tneb_section_office.json'];
 
-        const boundaryData = await boundaryRes.json();
-        const officeData = await officeRes.json();
+    try {
+        console.log('Worker: Initializing data (Checking Cache)...');
+        
+        const cache = await caches.open(CACHE_NAME);
+        const dataPromises = FILES.map(async (file) => {
+            let response = await cache.match(file);
+            if (!response) {
+                console.log(`Worker: Cache miss for ${file}, fetching from network...`);
+                response = await fetch(file);
+                // We need to clone it to put it in cache because fetch responses can only be read once
+                cache.put(file, response.clone());
+            } else {
+                console.log(`Worker: Cache hit for ${file}`);
+            }
+            return response.json();
+        });
+
+        const [boundaryData, officeData] = await Promise.all(dataPromises);
 
         // Index boundaries with BBoxes
         boundaries = boundaryData.features.map(f => {
@@ -78,6 +90,7 @@ async function init() {
         self.postMessage({ type: 'READY' });
         console.log('Worker: Data indexed and ready.');
     } catch (err) {
+        console.error('Worker Init Error:', err);
         self.postMessage({ type: 'ERROR', message: err.message });
     }
 }

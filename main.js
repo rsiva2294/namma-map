@@ -1,42 +1,42 @@
 import L from 'leaflet';
 import { createIcons, Zap, Locate, Search, MapPin, Navigation, Info, Map, AlertTriangle, RefreshCw } from 'lucide';
 
-// Store state
-let map = null;
-let marker = null;
-let worker = null;
-let boundaryLayer = null;
-let officeMarker = null;
+/**
+ * TNEB Jurisdiction Finder v2.0
+ * State-Driven Architecture for Performance & Maintainability
+ */
 
-// Initialize Lucide Icons
+const AppState = {
+    map: null,
+    marker: null,
+    worker: null,
+    boundaryLayer: null,
+    officeMarker: null,
+    currentLocation: null,
+    isSearching: false,
+    searchTimeout: null,
+    address: null
+};
+
+// --- Initialization ---
+
+function init() {
+    initIcons();
+    initMap();
+    initWorker();
+    initEventListeners();
+}
+
 function initIcons() {
     createIcons({
         icons: { Zap, Locate, Search, MapPin, Navigation, Info, Map, AlertTriangle, RefreshCw }
     });
 }
 
-function clearOverlays() {
-    if (boundaryLayer) {
-        map.removeLayer(boundaryLayer);
-        boundaryLayer = null;
-    }
-    if (officeMarker) {
-        map.removeLayer(officeMarker);
-        officeMarker = null;
-    }
-}
-
-
-// Initialize Leaflet Map
 function initMap() {
-    // Tamil Nadu focus
-    // Tamil Nadu Bounding Box
-    const tnBounds = L.latLngBounds(
-        L.latLng(8.0, 75.0), // Southwest
-        L.latLng(14.0, 81.0) // Northeast
-    );
+    const tnBounds = L.latLngBounds(L.latLng(8.0, 75.0), L.latLng(14.0, 81.0));
 
-    map = L.map('map', {
+    AppState.map = L.map('map', {
         preferCanvas: true,
         zoomControl: false,
         maxBounds: tnBounds,
@@ -45,237 +45,118 @@ function initMap() {
     }).setView([11.1271, 78.6569], 7);
 
     L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        attribution: '&copy; OS contributors &copy; CARTO',
         subdomains: 'abcd',
         maxZoom: 20
-    }).addTo(map);
+    }).addTo(AppState.map);
 
-    L.control.zoom({
-        position: 'bottomright'
-    }).addTo(map);
+    L.control.zoom({ position: 'bottomright' }).addTo(AppState.map);
 
-    // Map click handler
-    map.on('click', (e) => {
+    AppState.map.on('click', (e) => {
         const { lat, lng } = e.latlng;
         processLocation(lat, lng);
     });
 }
 
-// Worker Communication
 function initWorker() {
-    worker = new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });
+    AppState.worker = new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });
 
-    worker.onmessage = (e) => {
+    AppState.worker.onmessage = (e) => {
         const { type, data, message } = e.data;
         if (type === 'READY') {
-            onWorkerReady();
+            document.getElementById('loading-overlay').classList.add('fade-out');
+            setTimeout(() => document.getElementById('loading-overlay').remove(), 500);
         } else if (type === 'RESULT') {
-            displayResults(data);
+            UIRenderer.renderResults(data);
         } else if (type === 'ERROR') {
-            showError(message);
+            UIRenderer.renderError("System Error", message);
         }
     };
 
-    worker.postMessage({ type: 'INIT' });
+    AppState.worker.postMessage({ type: 'INIT' });
 }
 
-function onWorkerReady() {
-    const loader = document.getElementById('loading-overlay');
-    loader.classList.add('fade-out');
-    setTimeout(() => loader.remove(), 500);
+function initEventListeners() {
+    document.getElementById('main-gps-btn').onclick = triggerGPS;
+    document.getElementById('fab-gps').onclick = triggerGPS;
+    
+    document.getElementById('explore-btn').onclick = () => {
+        document.getElementById('start-panel').classList.add('hidden');
+        document.getElementById('fab-gps').classList.remove('hidden');
+    };
+
+    // Locality Search
+    const searchInput = document.getElementById('locality-search');
+    searchInput.oninput = (e) => handleSearchInput(e.target.value);
+    
+    // Close suggestions on click outside
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.search-container')) {
+            UIRenderer.toggleSuggestions(false);
+        }
+    });
 }
 
-// Main logic entry
-function processLocation(lat, lng) {
-    // Tamil Nadu Bounds Check
+// --- Location Logic ---
+
+async function processLocation(lat, lng) {
     const isInsideTN = lat >= 8.0 && lat <= 14.0 && lng >= 75.0 && lng <= 81.0;
 
-    // Transition from Start Panel to Results Panel
-    const startPanel = document.getElementById('start-panel');
-    const resultsPanel = document.getElementById('results-panel');
-    
-    if (startPanel) {
-        startPanel.classList.add('hidden');
-        document.getElementById('fab-gps').classList.remove('hidden');
-    }
-    resultsPanel.classList.remove('hidden');
+    // Transition UI
+    document.getElementById('start-panel').classList.add('hidden');
+    document.getElementById('fab-gps').classList.remove('hidden');
+    document.getElementById('results-panel').classList.remove('hidden');
 
     if (!isInsideTN) {
-        clearOverlays();
-        displayError("📍 Outside Supported Area", "We currently only support TNEB jurisdictions within Tamil Nadu. Please select a location within the state boundaries.");
+        UIRenderer.clearOverlays();
+        UIRenderer.renderError("📍 Outside Supported Area", "We currently only support TNEB jurisdictions within Tamil Nadu.");
         return;
     }
 
-    // Update marker
-    if (!marker) {
+    // Capture location
+    AppState.currentLocation = { lat, lng };
+    updateMarker(lat, lng);
+
+    // Get Address (Reverse Geocoding) - Non-blocking
+    fetchAddress(lat, lng);
+
+    // Call worker
+    AppState.worker.postMessage({ type: 'PROCESS', lat, lng });
+}
+
+async function fetchAddress(lat, lng) {
+    try {
+        const res = await fetch(`https://photon.komoot.io/reverse?lon=${lng}&lat=${lat}`);
+        const data = await res.json();
+        if (data.features && data.features.length > 0) {
+            const f = data.features[0].properties;
+            AppState.address = [f.name, f.street, f.district, f.city].filter(Boolean).join(', ');
+            // Update address in UI if already rendered
+            const addrEl = document.querySelector('.selection-address');
+            if (addrEl) addrEl.innerText = AppState.address;
+        }
+    } catch (e) {
+        console.warn('Address fetch failed', e);
+    }
+}
+
+function updateMarker(lat, lng) {
+    if (!AppState.marker) {
         const icon = L.divIcon({
             className: 'custom-marker',
             html: '<div class="pulse-ring"></div>',
             iconSize: [20, 20]
         });
-        marker = L.marker([lat, lng], { draggable: true, icon }).addTo(map);
-        marker.on('dragend', (e) => {
+        AppState.marker = L.marker([lat, lng], { draggable: true, icon }).addTo(AppState.map);
+        AppState.marker.on('dragend', (e) => {
             const pos = e.target.getLatLng();
             processLocation(pos.lat, pos.lng);
         });
     } else {
-        marker.setLatLng([lat, lng]);
+        AppState.marker.setLatLng([lat, lng]);
     }
-
-    // Call worker
-    worker.postMessage({ type: 'PROCESS', lat, lng });
 }
 
-// Simple Error display
-function displayError(title, msg) {
-    const panel = document.getElementById('results-panel');
-    panel.innerHTML = `
-        <div class="glass-panel error-card card">
-            <div class="card-header">
-                <i data-lucide="alert-triangle" style="color: var(--danger)"></i>
-                <h3 style="color: var(--danger)">${title}</h3>
-            </div>
-            <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 20px;">${msg}</p>
-            <button onclick="location.reload()" class="secondary-btn" style="width: 100%">
-                <i data-lucide="refresh-cw"></i> Try Again
-            </button>
-        </div>
-    `;
-    initIcons();
-}
-
-// UI Helpers
-function displayResults(data) {
-    const panel = document.getElementById('results-panel');
-    clearOverlays();
-    
-    const { jurisdiction, nearestOffice, additionalSections, coords, matchMethod } = data;
-
-    // DEBUG LOGGING
-    console.group('TNEB Debug Info');
-    console.log('Match Method:', matchMethod);
-    console.log('Matched Jurisdiction JSON:', JSON.stringify(jurisdiction, null, 2));
-    console.log('Matched Office JSON:', JSON.stringify(nearestOffice, null, 2));
-    console.groupEnd();
-
-    // 1. Render Section Boundary
-    if (jurisdiction && jurisdiction.geometry) {
-        // Swap [lng, lat] to [lat, lng] for Leaflet polygon
-        const latLngs = jurisdiction.geometry.map(p => [p[1], p[0]]);
-        boundaryLayer = L.polygon(latLngs, {
-            color: '#2563eb',
-            fillColor: '#3b82f6',
-            fillOpacity: 0.15,
-            weight: 2,
-            dashArray: '5, 10'
-        }).addTo(map);
-    }
-
-    // 2. Render Office Marker
-    if (nearestOffice && nearestOffice.coords) {
-        const zapIcon = L.divIcon({
-            className: 'office-marker',
-            html: '<div class="zap-icon-bg"><i data-lucide="zap"></i></div>',
-            iconSize: [32, 32],
-            iconAnchor: [16, 32]
-        });
-        officeMarker = L.marker([nearestOffice.coords[0], nearestOffice.coords[1]], { icon: zapIcon }).addTo(map);
-        
-        const popupMsg = data.matchMethod.includes('OFFICIAL') 
-            ? `<b>${nearestOffice.name}</b><br>Section Office`
-            : `<b>${nearestOffice.name}</b><br>Nearest Section Office (Proximity Fallback)`;
-        
-        officeMarker.bindPopup(popupMsg);
-    }
-
-    let html = `
-        <div class="selection-header">
-            <i data-lucide="map-pin" class="icon-primary"></i>
-            <div class="selection-info">
-                <span class="selection-label">SELECTED LOCATION</span>
-                <span class="selection-coords">${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}</span>
-            </div>
-        </div>
-    `;
-
-    if (jurisdiction) {
-        html += `
-            <div class="glass-panel jurisdiction-card card">
-                <div class="card-header">
-                    <i data-lucide="zap" class="icon-primary"></i>
-                    <h3>Primary Jurisdiction</h3>
-                </div>
-                <div class="hierarchy-grid">
-                    <div class="h-item"><span class="h-label">SECTION</span><span class="h-value">${jurisdiction.section}</span></div>
-                    <div class="h-item"><span class="h-label">SUBDIVISION</span><span class="h-value">${jurisdiction.subdivision}</span></div>
-                    <div class="h-item"><span class="h-label">DIVISION</span><span class="h-value">${jurisdiction.division}</span></div>
-                    <div class="h-item"><span class="h-label">CIRCLE</span><span class="h-value">${jurisdiction.circle}</span></div>
-                    <div class="h-item"><span class="h-label">REGION</span><span class="h-value">${jurisdiction.region}</span></div>
-                    <div class="h-item"><span class="h-label">TYPE</span><span class="h-value">${jurisdiction.type}</span></div>
-                </div>
-            </div>
-        `;
-
-        if (additionalSections && additionalSections.length > 0) {
-            html += `
-                <div class="glass-panel overlaps-card card">
-                    <div class="card-header">
-                        <i data-lucide="info" class="icon-muted"></i>
-                        <h3>Also Applicable Sections</h3>
-                    </div>
-                    <div class="overlaps-list">
-                        ${additionalSections.map(s => `
-                            <div class="overlap-item">
-                                <span class="overlap-name">${s.section}</span>
-                                <span class="overlap-detail">${s.subdivision} / ${s.division}</span>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
-        }
-    } else {
-        html += `
-            <div class="glass-panel jurisdiction-card card error">
-                <p>Location outside known TNEB boundaries.</p>
-            </div>
-        `;
-    }
-
-    if (nearestOffice) {
-        const navUrl = `https://www.google.com/maps/dir/?api=1&destination=${nearestOffice.coords[0]},${nearestOffice.coords[1]}`;
-        const matchLabel = data.matchMethod.includes('OFFICIAL') ? 'Matched' : 'Nearest Office (Proximity)';
-        const labelClass = data.matchMethod.includes('OFFICIAL') ? 'status-official' : 'status-proximity';
-
-        html += `
-            <div class="glass-panel office-card card">
-                <div class="card-header">
-                    <i data-lucide="map-pin" class="icon-primary"></i>
-                    <h3>Section Office</h3>
-                    <span class="badge ${labelClass}">${matchLabel}</span>
-                </div>
-                <div class="office-info">
-                    <div class="office-name">${nearestOffice.name}</div>
-                    <div class="office-detail"><i data-lucide="navigation" class="icon-muted"></i> Approximately ${nearestOffice.distance} km away</div>
-                    <div class="office-detail"><i data-lucide="info" class="icon-muted"></i> ${nearestOffice.properties.subdivisio} / ${nearestOffice.properties.division_n}</div>
-                    <a href="${navUrl}" target="_blank" class="nav-btn">
-                        <i data-lucide="navigation"></i> Get Directions
-                    </a>
-                </div>
-            </div>
-        `;
-    }
-
-    panel.innerHTML = html;
-    initIcons(); // Re-init icons for dynamic content
-}
-
-function showError(msg) {
-    console.error('GIS Engine Error:', msg);
-    alert('Failed to process spatial data: ' + msg);
-}
-
-// GPS trigger
 function triggerGPS() {
     const mainBtn = document.getElementById('main-gps-btn');
     const fabBtn = document.getElementById('fab-gps');
@@ -286,16 +167,11 @@ function triggerGPS() {
             if (loading) {
                 btn.classList.add('loading-gps');
                 const span = btn.querySelector('span');
-                if (span) {
-                    btn._oldText = span.innerText;
-                    span.innerText = 'Detecting...';
-                }
+                if (span) { btn._oldText = span.innerText; span.innerText = 'Detecting...'; }
             } else {
                 btn.classList.remove('loading-gps');
                 const span = btn.querySelector('span');
-                if (span && btn._oldText) {
-                    span.innerText = btn._oldText;
-                }
+                if (span && btn._oldText) { span.innerText = btn._oldText; }
             }
         });
     };
@@ -305,33 +181,189 @@ function triggerGPS() {
         navigator.geolocation.getCurrentPosition((pos) => {
             setLoader(false);
             const { latitude, longitude } = pos.coords;
-            map.flyTo([latitude, longitude], 14);
+            AppState.map.flyTo([latitude, longitude], 14);
             processLocation(latitude, longitude);
         }, (err) => {
             setLoader(false);
-            let msg = "Could not detect location.";
-            if (err.code === 1) msg = "Location access denied. Please enable GPS.";
-            else if (err.code === 2) msg = "Location unavailable. Check your network.";
-            else if (err.code === 3) msg = "GPS request timed out.";
-            
-            displayError("📍 GPS Error", msg);
+            displayGPSError(err);
         }, { enableHighAccuracy: true, timeout: 10000 });
-    } else {
-        displayError("📍 Geolocation Not Supported", "Your browser does not support location services.");
     }
 }
 
-// Start
-window.addEventListener('DOMContentLoaded', () => {
-    initIcons();
-    initMap();
-    initWorker();
+function displayGPSError(err) {
+    let msg = "Could not detect location.";
+    if (err.code === 1) msg = "Location access denied. Please enable GPS.";
+    else if (err.code === 2) msg = "Location unavailable.";
+    UIRenderer.renderError("📍 GPS Error", msg);
+}
 
-    document.getElementById('main-gps-btn').onclick = triggerGPS;
-    document.getElementById('fab-gps').onclick = triggerGPS;
-    
-    document.getElementById('explore-btn').onclick = () => {
-        document.getElementById('start-panel').classList.add('hidden');
-        document.getElementById('fab-gps').classList.remove('hidden');
-    };
-});
+// --- Search Logic ---
+
+function handleSearchInput(query) {
+    if (AppState.searchTimeout) clearTimeout(AppState.searchTimeout);
+    if (!query || query.length < 3) {
+        UIRenderer.toggleSuggestions(false);
+        return;
+    }
+
+    AppState.searchTimeout = setTimeout(async () => {
+        try {
+            // Search restricted to Tamil Nadu area
+            const res = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&lat=11.1271&lon=78.6569&limit=5`);
+            const data = await res.json();
+            UIRenderer.renderSuggestions(data.features);
+        } catch (e) {
+            console.warn('Search failed', e);
+        }
+    }, 300);
+}
+
+// --- UI Rendering ---
+
+const UIRenderer = {
+    clearOverlays() {
+        if (AppState.boundaryLayer) AppState.map.removeLayer(AppState.boundaryLayer);
+        if (AppState.officeMarker) AppState.map.removeLayer(AppState.officeMarker);
+        AppState.boundaryLayer = null;
+        AppState.officeMarker = null;
+    },
+
+    toggleSuggestions(show) {
+        const el = document.getElementById('search-suggestions');
+        if (show) el.classList.remove('hidden');
+        else el.classList.add('hidden');
+    },
+
+    renderSuggestions(features) {
+        const container = document.getElementById('search-suggestions');
+        if (!features || features.length === 0) {
+            this.toggleSuggestions(false);
+            return;
+        }
+
+        container.innerHTML = features.map(f => `
+            <div class="suggestion-item" data-lat="${f.geometry.coordinates[1]}" data-lng="${f.geometry.coordinates[0]}">
+                <span class="name">${f.properties.name || f.properties.street || 'Point'}</span>
+                <span class="address">${f.properties.city || ''} ${f.properties.district || ''}</span>
+            </div>
+        `).join('');
+
+        // Bind clicks
+        container.querySelectorAll('.suggestion-item').forEach(item => {
+            item.onclick = () => {
+                const lat = parseFloat(item.dataset.lat);
+                const lng = parseFloat(item.dataset.lng);
+                AppState.map.flyTo([lat, lng], 14);
+                processLocation(lat, lng);
+                this.toggleSuggestions(false);
+                document.getElementById('locality-search').value = item.querySelector('.name').innerText;
+            };
+        });
+
+        this.toggleSuggestions(true);
+    },
+
+    renderResults(data) {
+        const panel = document.getElementById('results-panel');
+        this.clearOverlays();
+        
+        const { jurisdiction, nearestOffice, additionalSections, coords, matchMethod } = data;
+
+        // 1. Render Polygons/Markers
+        if (jurisdiction?.geometry) {
+            AppState.boundaryLayer = L.polygon(jurisdiction.geometry.map(p => [p[1], p[0]]), {
+                color: '#2563eb', fillColor: '#3b82f6', fillOpacity: 0.15, weight: 2, dashArray: '5, 10'
+            }).addTo(AppState.map);
+        }
+
+        if (nearestOffice?.coords) {
+            const zapIcon = L.divIcon({
+                className: 'office-marker',
+                html: '<div class="zap-icon-bg"><i data-lucide="zap"></i></div>',
+                iconSize: [32, 32], iconAnchor: [16, 32]
+            });
+            AppState.officeMarker = L.marker(nearestOffice.coords, { icon: zapIcon }).addTo(AppState.map);
+            AppState.officeMarker.bindPopup(`<b>${nearestOffice.name}</b><br>Section Office`);
+        }
+
+        // 2. Build HTML
+        let html = `
+            <div class="selection-header">
+                <i data-lucide="map-pin" class="icon-primary"></i>
+                <div class="selection-info">
+                    <span class="selection-label">SELECTED LOCATION</span>
+                    <span class="selection-address">${AppState.address || 'Resolving address...'}</span>
+                    <span class="selection-coords">${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}</span>
+                </div>
+            </div>
+        `;
+
+        if (jurisdiction) {
+            html += `
+                <div class="glass-panel jurisdiction-card card">
+                    <div class="card-header">
+                        <i data-lucide="zap" class="icon-primary"></i>
+                        <h3>Primary Jurisdiction</h3>
+                    </div>
+                    <div class="hierarchy-grid">
+                        ${this.renderHItem("SECTION", jurisdiction.section)}
+                        ${this.renderHItem("SUBDIVISION", jurisdiction.subdivision)}
+                        ${this.renderHItem("DIVISION", jurisdiction.division)}
+                        ${this.renderHItem("CIRCLE", jurisdiction.circle)}
+                        ${this.renderHItem("REGION", jurisdiction.region)}
+                        ${this.renderHItem("TYPE", jurisdiction.type)}
+                    </div>
+                </div>
+            `;
+        }
+
+        if (nearestOffice) {
+            const label = matchMethod.includes('OFFICIAL') ? 'Matched' : 'Nearest (Proximity)';
+            const labelClass = matchMethod.includes('OFFICIAL') ? 'status-official' : 'status-proximity';
+            const navUrl = `https://www.google.com/maps/dir/?api=1&destination=${nearestOffice.coords[0]},${nearestOffice.coords[1]}`;
+
+            html += `
+                <div class="glass-panel office-card card">
+                    <div class="card-header">
+                        <i data-lucide="map-pin" class="icon-primary"></i>
+                        <h3>Section Office</h3>
+                        <span class="badge ${labelClass}">${label}</span>
+                    </div>
+                    <div class="office-info">
+                        <div class="office-name">${nearestOffice.name}</div>
+                        <div class="office-detail"><i data-lucide="navigation" class="icon-muted"></i> ~${nearestOffice.distance} km</div>
+                        <a href="${navUrl}" target="_blank" class="nav-btn">
+                            <i data-lucide="navigation"></i> Directions
+                        </a>
+                    </div>
+                </div>
+            `;
+        }
+
+        panel.innerHTML = html;
+        initIcons();
+    },
+
+    renderHItem(label, value) {
+        return `<div class="h-item"><span class="h-label">${label}</span><span class="h-value">${value}</span></div>`;
+    },
+
+    renderError(title, msg) {
+        const panel = document.getElementById('results-panel');
+        panel.innerHTML = `
+            <div class="glass-panel error-card card">
+                <div class="card-header">
+                    <i data-lucide="alert-triangle" style="color: var(--danger)"></i>
+                    <h3 style="color: var(--danger)">${title}</h3>
+                </div>
+                <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.5;">${msg}</p>
+                <button onclick="location.reload()" class="secondary-btn" style="width: 100%; margin-top: 20px;">
+                    <i data-lucide="refresh-cw"></i> Refresh App
+                </button>
+            </div>
+        `;
+        initIcons();
+    }
+};
+
+window.addEventListener('DOMContentLoaded', init);
