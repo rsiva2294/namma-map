@@ -148,7 +148,14 @@ function displayResults(data) {
     const panel = document.getElementById('results-panel');
     clearOverlays();
     
-    const { jurisdiction, nearestOffice, additionalSections, coords } = data;
+    const { jurisdiction, nearestOffice, additionalSections, coords, matchMethod } = data;
+
+    // DEBUG LOGGING
+    console.group('TNEB Debug Info');
+    console.log('Match Method:', matchMethod);
+    console.log('Matched Jurisdiction JSON:', JSON.stringify(jurisdiction, null, 2));
+    console.log('Matched Office JSON:', JSON.stringify(nearestOffice, null, 2));
+    console.groupEnd();
 
     // 1. Render Section Boundary
     if (jurisdiction && jurisdiction.geometry) {
