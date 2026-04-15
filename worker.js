@@ -104,7 +104,10 @@ function processLocation(lat, lng) {
         return 0;
     });
 
-    const jurisdiction = sortedMatches.length > 0 ? formatJurisdiction(sortedMatches[0].properties) : null;
+    const jurisdiction = sortedMatches.length > 0 ? {
+        ...formatJurisdiction(sortedMatches[0].properties),
+        geometry: sortedMatches[0].geometry
+    } : null;
     const additionalSections = sortedMatches.slice(1).map(m => formatJurisdiction(m.properties));
 
     // 3. Find nearest office

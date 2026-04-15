@@ -5,12 +5,25 @@ import { createIcons, Zap, Locate, Search, MapPin, Navigation, Info, Map, AlertT
 let map = null;
 let marker = null;
 let worker = null;
+let boundaryLayer = null;
+let officeMarker = null;
 
 // Initialize Lucide Icons
 function initIcons() {
     createIcons({
         icons: { Zap, Locate, Search, MapPin, Navigation, Info, Map, AlertTriangle, RefreshCw }
     });
+}
+
+function clearOverlays() {
+    if (boundaryLayer) {
+        map.removeLayer(boundaryLayer);
+        boundaryLayer = null;
+    }
+    if (officeMarker) {
+        map.removeLayer(officeMarker);
+        officeMarker = null;
+    }
 }
 
 
@@ -87,6 +100,7 @@ function processLocation(lat, lng) {
     resultsPanel.classList.remove('hidden');
 
     if (!isInsideTN) {
+        clearOverlays();
         displayError("📍 Outside Supported Area", "We currently only support TNEB jurisdictions within Tamil Nadu. Please select a location within the state boundaries.");
         return;
     }
@@ -132,8 +146,34 @@ function displayError(title, msg) {
 // UI Helpers
 function displayResults(data) {
     const panel = document.getElementById('results-panel');
+    clearOverlays();
     
     const { jurisdiction, nearestOffice, additionalSections, coords } = data;
+
+    // 1. Render Section Boundary
+    if (jurisdiction && jurisdiction.geometry) {
+        // Swap [lng, lat] to [lat, lng] for Leaflet polygon
+        const latLngs = jurisdiction.geometry.map(p => [p[1], p[0]]);
+        boundaryLayer = L.polygon(latLngs, {
+            color: '#2563eb',
+            fillColor: '#3b82f6',
+            fillOpacity: 0.15,
+            weight: 2,
+            dashArray: '5, 10'
+        }).addTo(map);
+    }
+
+    // 2. Render Office Marker
+    if (nearestOffice && nearestOffice.coords) {
+        const zapIcon = L.divIcon({
+            className: 'office-marker',
+            html: '<div class="zap-icon-bg"><i data-lucide="zap"></i></div>',
+            iconSize: [32, 32],
+            iconAnchor: [16, 32]
+        });
+        officeMarker = L.marker([nearestOffice.coords[0], nearestOffice.coords[1]], { icon: zapIcon }).addTo(map);
+        officeMarker.bindPopup(`<b>${nearestOffice.name}</b><br>Nearest Section Office`);
+    }
 
     let html = `
         <div class="selection-header">
