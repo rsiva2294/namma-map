@@ -68,6 +68,8 @@ function initWorker() {
             setTimeout(() => document.getElementById('loading-overlay').remove(), 500);
         } else if (type === 'RESULT') {
             UIRenderer.renderResults(data);
+        } else if (type === 'SEARCH_RESULTS') {
+            UIRenderer.renderSuggestions(data);
         } else if (type === 'ERROR') {
             UIRenderer.renderError("System Error", message);
         }
@@ -125,19 +127,10 @@ async function processLocation(lat, lng) {
 }
 
 async function fetchAddress(lat, lng) {
-    try {
-        const res = await fetch(`https://photon.komoot.io/reverse?lon=${lng}&lat=${lat}`);
-        const data = await res.json();
-        if (data.features && data.features.length > 0) {
-            const f = data.features[0].properties;
-            AppState.address = [f.name, f.street, f.district, f.city].filter(Boolean).join(', ');
-            // Update address in UI if already rendered
-            const addrEl = document.querySelector('.selection-address');
-            if (addrEl) addrEl.innerText = AppState.address;
-        }
-    } catch (e) {
-        console.warn('Address fetch failed', e);
-    }
+    // Local Geocoding - We'll use the worker result for this
+    // We already get the Section/Subdivision info from the PROCESS result
+    // This function will now just act as a placeholder or clear the custom address
+    AppState.address = null; 
 }
 
 function updateMarker(lat, lng) {
@@ -206,16 +199,9 @@ function handleSearchInput(query) {
         return;
     }
 
-    AppState.searchTimeout = setTimeout(async () => {
-        try {
-            // Search restricted to Tamil Nadu area
-            const res = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&lat=11.1271&lon=78.6569&limit=5`);
-            const data = await res.json();
-            UIRenderer.renderSuggestions(data.features);
-        } catch (e) {
-            console.warn('Search failed', e);
-        }
-    }, 300);
+    AppState.searchTimeout = setTimeout(() => {
+        AppState.worker.postMessage({ type: 'SEARCH', query });
+    }, 200);
 }
 
 // --- UI Rendering ---
@@ -234,17 +220,17 @@ const UIRenderer = {
         else el.classList.add('hidden');
     },
 
-    renderSuggestions(features) {
+    renderSuggestions(results) {
         const container = document.getElementById('search-suggestions');
-        if (!features || features.length === 0) {
+        if (!results || results.length === 0) {
             this.toggleSuggestions(false);
             return;
         }
 
-        container.innerHTML = features.map(f => `
-            <div class="suggestion-item" data-lat="${f.geometry.coordinates[1]}" data-lng="${f.geometry.coordinates[0]}">
-                <span class="name">${f.properties.name || f.properties.street || 'Point'}</span>
-                <span class="address">${f.properties.city || ''} ${f.properties.district || ''}</span>
+        container.innerHTML = results.map(r => `
+            <div class="suggestion-item" data-lat="${r.center[0]}" data-lng="${r.center[1]}">
+                <span class="name">${r.name}</span>
+                <span class="address">${r.details}</span>
             </div>
         `).join('');
 
@@ -268,6 +254,13 @@ const UIRenderer = {
         this.clearOverlays();
         
         const { jurisdiction, nearestOffice, additionalSections, coords, matchMethod } = data;
+
+        // Update Address context from local attributes
+        if (jurisdiction) {
+            AppState.address = `${jurisdiction.section}, ${jurisdiction.subdivision}`;
+        } else {
+            AppState.address = "Unknown Location";
+        }
 
         // 1. Render Polygons/Markers
         if (jurisdiction?.geometry) {
