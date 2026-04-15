@@ -1,13 +1,13 @@
 :root {
-  --glass-bg: rgba(15, 23, 42, 0.85);
-  --glass-border: rgba(255, 255, 255, 0.2);
-  --glass-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.6);
-  --accent-primary: #3b82f6;
-  --accent-secondary: #93c5fd;
-  --text-main: #ffffff;
-  --text-muted: #cbd5e1;
-  --danger: #ef4444;
-  --success: #10b981;
+  --glass-bg: rgba(255, 255, 255, 0.9);
+  --glass-border: rgba(0, 0, 0, 0.1);
+  --glass-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.15);
+  --accent-primary: #2563eb;
+  --accent-secondary: #3b82f6;
+  --text-main: #0f172a;
+  --text-muted: #475569;
+  --danger: #dc2626;
+  --success: #16a34a;
 }
 
 * {
@@ -18,7 +18,7 @@
 }
 
 body {
-  background-color: #0f172a;
+  background-color: #f1f5f9;
   color: var(--text-main);
   height: 100vh;
   overflow: hidden;
@@ -68,8 +68,8 @@ body {
   font-size: 1.3rem;
   font-weight: 800;
   letter-spacing: -0.025em;
-  color: #ffffff;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  color: #0f172a;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
 
 .subtitle {
@@ -105,16 +105,16 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(255, 255, 255, 0.8);
   padding: 10px 14px;
   border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .search-box input {
   background: transparent;
   border: none;
-  color: #ffffff;
+  color: #0f172a;
   flex: 1;
   font-size: 0.95rem;
   font-weight: 500;
@@ -122,7 +122,7 @@ body {
 }
 
 .search-box input::placeholder {
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(0, 0, 0, 0.4);
 }
 
 .search-box button {
@@ -194,13 +194,13 @@ body {
 }
 
 .secondary-btn {
-  background: rgba(255, 255, 255, 0.08);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.05);
+  color: #0f172a;
+  border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .secondary-btn:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.08);
   transform: translateY(-2px);
 }
 
@@ -208,7 +208,7 @@ body {
 .selection-header {
   margin-bottom: 20px;
   padding: 12px 16px;
-  background: rgba(59, 130, 246, 0.1);
+  background: rgba(37, 99, 235, 0.05);
   border: 1px dashed var(--accent-primary);
   border-radius: 12px;
   display: flex;
@@ -224,13 +224,13 @@ body {
 .selection-label {
   font-size: 0.65rem;
   font-weight: 800;
-  color: var(--accent-secondary);
+  color: var(--accent-primary);
 }
 
 .selection-coords {
   font-size: 0.85rem;
   font-family: monospace;
-  color: #ffffff;
+  color: #0f172a;
 }
 
 /* Results Section */
@@ -280,12 +280,12 @@ body {
 }
 
 .overlap-item {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.03);
   padding: 10px 14px;
   border-radius: 12px;
   display: flex;
   flex-direction: column;
-  border-left: 3px solid var(--accent-secondary);
+  border-left: 3px solid var(--accent-primary);
 }
 
 .overlap-name {
@@ -306,16 +306,16 @@ body {
 }
 
 .h-item {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.03);
   padding: 12px;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .h-label {
   font-size: 0.7rem;
   font-weight: 700;
-  color: var(--accent-secondary);
+  color: var(--accent-primary);
   display: block;
   margin-bottom: 4px;
   letter-spacing: 0.05em;
@@ -376,7 +376,7 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(15, 23, 42, 0.9);
+  background: rgba(241, 251, 255, 0.95);
   z-index: 2000;
   display: flex;
   align-items: center;
