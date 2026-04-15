@@ -17,9 +17,18 @@ function initIcons() {
 // Initialize Leaflet Map
 function initMap() {
     // Tamil Nadu focus
+    // Tamil Nadu Bounding Box
+    const tnBounds = L.latLngBounds(
+        L.latLng(8.0, 75.0), // Southwest
+        L.latLng(14.0, 81.0) // Northeast
+    );
+
     map = L.map('map', {
         preferCanvas: true,
-        zoomControl: false
+        zoomControl: false,
+        maxBounds: tnBounds,
+        maxBoundsViscosity: 1.0,
+        minZoom: 7
     }).setView([11.1271, 78.6569], 7);
 
     L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
