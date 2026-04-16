@@ -1,5 +1,5 @@
 import L from 'leaflet';
-import { createIcons, Zap, Locate, Search, MapPin, Navigation, Info, Map, AlertTriangle, RefreshCw } from 'lucide';
+import { createIcons, Zap, Locate, Search, MapPin, Navigation, Info, Map, AlertTriangle, RefreshCw, ArrowLeft } from 'lucide';
 
 /**
  * TNEB Jurisdiction Finder v2.0
@@ -16,7 +16,9 @@ const AppState = {
     isSearching: false,
     searchTimeout: null,
     expandTimeout: null,
-    address: null
+    address: null,
+    districts: [],
+    districtLayer: null
 };
 
 // --- Initialization ---
@@ -26,12 +28,13 @@ function init() {
     initMap();
     initWorker();
     initStateBoundary();
+    initDistrictBoundaries();
     initEventListeners();
 }
 
 function initIcons() {
     createIcons({
-        icons: { Zap, Locate, Search, MapPin, Navigation, Info, Map, AlertTriangle, RefreshCw }
+        icons: { Zap, Locate, Search, MapPin, Navigation, Info, Map, AlertTriangle, RefreshCw, ArrowLeft }
     });
 }
 
@@ -80,6 +83,110 @@ async function initStateBoundary() {
     } catch (err) {
         console.error('Failed to load state boundary for visualization:', err);
     }
+}
+
+async function initDistrictBoundaries() {
+    try {
+        const response = await fetch('/Districts_boundary.json');
+        const data = await response.json();
+        
+        AppState.districts = data.features.map(f => ({
+            name: f.properties.district_n,
+            bounds: L.geoJSON(f).getBounds(),
+            feature: f
+        })).sort((a, b) => a.name.localeCompare(b.name));
+
+        // Data is maintained in AppState.districts for the search dropdown, 
+        // but we don't need to render the visual layer as the base map already shows it.
+        AppState.districtLayer = null; 
+
+        setupDistrictSearch();
+    } catch (err) {
+        console.error('Failed to load district boundaries:', err);
+    }
+}
+
+function setupDistrictSearch() {
+    const input = document.getElementById('district-search');
+    const results = document.getElementById('district-results');
+
+    if (!input || !results) return;
+
+    input.addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase().trim();
+        if (!query) {
+            results.classList.add('hidden');
+            return;
+        }
+
+        const filtered = AppState.districts.filter(d => 
+            d.name.toLowerCase().includes(query)
+        );
+
+        renderDistrictResults(filtered);
+    });
+
+    // Close results when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!input.contains(e.target) && !results.contains(e.target)) {
+            results.classList.add('hidden');
+        }
+    });
+
+    // Show all districts on focus if empty
+    input.addEventListener('focus', () => {
+        if (!input.value.trim()) {
+            renderDistrictResults(AppState.districts);
+        }
+    });
+}
+
+function renderDistrictResults(list) {
+    const results = document.getElementById('district-results');
+    results.innerHTML = '';
+    
+    if (list.length === 0) {
+        results.innerHTML = '<div class="district-item no-results">No districts found</div>';
+    } else {
+        list.forEach(d => {
+            const div = document.createElement('div');
+            div.className = 'district-item';
+            div.textContent = d.name;
+            div.onclick = () => selectDistrict(d);
+            results.appendChild(div);
+        });
+    }
+    
+    results.classList.remove('hidden');
+}
+
+function selectDistrict(district) {
+    const input = document.getElementById('district-search');
+    const results = document.getElementById('district-results');
+    
+    input.value = district.name;
+    results.classList.add('hidden');
+
+    // 1. Clear previous highlight
+    if (AppState.districtLayer) {
+        AppState.map.removeLayer(AppState.districtLayer);
+    }
+
+    // 2. Draw selected district border
+    AppState.districtLayer = L.geoJSON(district.feature, {
+        style: {
+            color: '#2563eb',
+            weight: 3,
+            fillOpacity: 0.1,
+            fillColor: '#3b82f6',
+            interactive: false
+        }
+    }).addTo(AppState.map);
+
+    AppState.map.flyToBounds(district.bounds, {
+        padding: [50, 50],
+        duration: 1.5
+    });
 }
 
 function initWorker() {
@@ -465,7 +572,14 @@ const UIRenderer = {
         // 3. Build HTML
         const isConsumerDriver = driver === 'consumer';
         let html = `
-            <div class="selection-header">
+            <div class="results-toolbar">
+                <button class="back-link-btn" onclick="resetApp()" title="Return to Search">
+                    <i data-lucide="arrow-left"></i>
+                    <span>Back to Search</span>
+                </button>
+            </div>
+            
+            <div class="selection-summary">
                 <i data-lucide="${isConsumerDriver ? 'zap' : 'map-pin'}" class="icon-primary"></i>
                 <div class="selection-info">
                     <span class="selection-label">${isConsumerDriver ? 'CONSUMER NUMBER' : 'SELECTED LOCATION'}</span>
@@ -560,5 +674,39 @@ const UIRenderer = {
         initIcons();
     }
 };
+
+function resetApp() {
+    // 1. Clear State
+    AppState.currentLocation = null;
+    AppState.address = null;
+    UIRenderer.clearOverlays();
+    
+    if (AppState.marker) {
+        AppState.map.removeLayer(AppState.marker);
+        AppState.marker = null;
+    }
+
+    if (AppState.districtLayer) {
+        AppState.map.removeLayer(AppState.districtLayer);
+        AppState.districtLayer = null;
+    }
+
+    // 2. Clear Inputs
+    const consumerInput = document.getElementById('consumer-number');
+    const districtInput = document.getElementById('district-search');
+    if (consumerInput) consumerInput.value = '';
+    if (districtInput) districtInput.value = '';
+
+    // 3. Toggle Panels
+    document.getElementById('start-panel').classList.remove('hidden');
+    document.getElementById('results-panel').classList.add('hidden');
+    document.getElementById('fab-gps').classList.add('hidden');
+
+    // 4. Reset Map View
+    AppState.map.flyTo([11.1271, 78.6569], 7);
+}
+
+// Make resetApp global for onclick handlers
+window.resetApp = resetApp;
 
 window.addEventListener('DOMContentLoaded', init);

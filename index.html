@@ -36,13 +36,6 @@
         <div id="map"></div>
 
         <!-- Floating UI Overlays -->
-        <header class="glass-panel main-header">
-            <div class="logo">
-                <i data-lucide="zap" class="icon-primary"></i>
-                <h1>TNEB Jurisdiction</h1>
-            </div>
-            <p class="subtitle">Finder Service</p>
-        </header>
 
         <!-- Search / Info Panel -->
         <aside class="side-panel" id="side-panel">
@@ -64,6 +57,7 @@
             <div id="start-panel" class="glass-panel start-card">
                 <h2>Find Your Jurisdiction</h2>
                 <p>Select how you want to find your electricity section</p>
+                
                 <div class="start-actions">
                     <button id="main-gps-btn" class="primary-btn">
                         <i data-lucide="locate"></i>
@@ -73,6 +67,18 @@
                         <i data-lucide="map"></i>
                         <span>Explore on Map</span>
                     </button>
+                </div>
+
+                <div class="divider">
+                    <span>OR</span>
+                </div>
+
+                <div class="district-search-group">
+                    <label for="district-search"><i data-lucide="map-pin"></i> Select District</label>
+                    <div class="district-combo-box">
+                        <input type="text" id="district-search" placeholder="Type to find a district..." autocomplete="off">
+                        <div id="district-results" class="combo-results hidden"></div>
+                    </div>
                 </div>
             </div>
 

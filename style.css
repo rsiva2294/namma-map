@@ -46,38 +46,6 @@ body {
   box-shadow: var(--glass-shadow);
 }
 
-.main-header {
-  position: absolute;
-  top: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 1000;
-  padding: 12px 24px;
-  text-align: center;
-  pointer-events: none;
-}
-
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  justify-content: center;
-}
-
-.logo h1 {
-  font-size: 1.3rem;
-  font-weight: 800;
-  letter-spacing: -0.025em;
-  color: #0f172a;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.1);
-}
-
-.subtitle {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
 
 .search-container {
   padding: 12px;
@@ -319,15 +287,43 @@ body {
 }
 
 /* Results Content */
-.selection-header {
+/* Results Content */
+.results-toolbar {
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+}
+
+.back-link-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  color: var(--accent-primary);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 8px 12px;
+  margin-left: -12px; /* Pull into padding for alignment */
+  border-radius: 50px;
+  transition: all 0.2s;
+}
+
+.back-link-btn:hover {
+  background: rgba(59, 130, 246, 0.1);
+  transform: translateX(-4px);
+}
+
+.selection-summary {
   margin-bottom: 24px;
   padding: 16px 20px;
   background: rgba(37, 99, 235, 0.05);
   border: 1px dashed var(--accent-primary);
-  border-radius: 16px;
+  border-radius: 20px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
 }
 
 .selection-info {
@@ -609,9 +605,6 @@ body {
 
 /* Responsive Overhaul */
 @media (max-width: 640px) {
-    .main-header {
-        display: none !important;
-    }
 
     .side-panel {
         top: auto;
@@ -709,7 +702,17 @@ body {
     .results-container {
         padding: 12px;
         gap: 12px;
-        padding-bottom: 60px; /* Ensure directions button is visible */
+        padding-bottom: 80px; 
+    }
+
+    .results-toolbar {
+        margin-bottom: 8px;
+    }
+
+    .selection-summary {
+        padding: 12px 16px;
+        gap: 12px;
+        border-radius: 16px;
     }
 
     .card {
@@ -913,7 +916,106 @@ body {
     100% { transform: scale(1); opacity: 1; }
 }
 
-@keyframes slide-up-fade {
-    from { transform: translate(-50%, -40%); opacity: 0; }
-    to { transform: translate(-50%, -50%); opacity: 1; }
+
+/* OR Divider */
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 20px 0;
+  color: #64748b;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1px solid rgba(59, 130, 246, 0.1);
+}
+
+.divider span {
+  padding: 0 10px;
+}
+
+/* District Search */
+.district-search-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.district-search-group label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.district-combo-box {
+  position: relative;
+}
+
+#district-search {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  background: white;
+  font-size: 1rem;
+  transition: all 0.2s;
+  color: #1e293b;
+}
+
+#district-search:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+}
+
+.combo-results {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(59, 130, 246, 0.1);
+  border-radius: 12px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 100;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+}
+
+.combo-results.hidden {
+  display: none;
+}
+
+.district-item {
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background 0.2s;
+  color: #334155;
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.district-item:hover {
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--accent-primary);
+}
+
+.district-item:not(:last-child) {
+  border-bottom: 1px solid rgba(59, 130, 246, 0.05);
+}
+
+.district-item.no-results {
+  color: #94a3b8;
+  font-style: italic;
+  text-align: center;
+  cursor: default;
 }
