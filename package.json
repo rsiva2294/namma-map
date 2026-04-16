@@ -16,6 +16,7 @@
     "lucide": "^1.8.0"
   },
   "devDependencies": {
-    "vite": "^8.0.8"
+    "vite": "^8.0.8",
+    "vite-plugin-pwa": "^1.2.0"
   }
 }
