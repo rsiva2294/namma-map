@@ -4,24 +4,26 @@ A high-performance, privacy-first GIS application designed to help Tamil Nadu el
 
 ## 🚀 Key Features
 
-- **Deterministic Matching**: Enter your 12-digit Consumer Number to instantly resolve your administrative Section without guessing.
-- **GPS-Based Discovery**: Automatically find the nearest Section Office and jurisdiction boundary based on your current location.
-- **Boundary Visualization**: View detailed jurisdiction polygons on an interactive map for precise spatial context.
-- **Privacy First**: All GIS indexing and matching happen locally in your browser using a Web Worker. No consumer data ever leaves your device.
-- **Premium UX**: A dark-mode, glass-morphism interface optimized for both desktop and mobile devices.
+- **Deterministic Matching**: Use our **Unified Administrative Index** to resolve your jurisdiction via Consumer Number or Map with O(1) speed.
+- **Consumer-First Precedence**: Manual input is prioritized over spatial proximity to ensure absolute administrative accuracy.
+- **GPS-Based Discovery**: Automatically find your Section Office and jurisdiction boundary based on your current location with smart fallbacks.
+- **Boundary Visualization**: View precise jurisdiction polygons on a high-performance Leaflet-driven interactive map.
+- **Privacy First**: All GIS indexing and matching happen locally in your browser. No consumer data or location information ever leaves your device.
+- **Premium UX**: A mobile-optimized glass-morphism interface with real-time feedback and detailed hierarchy information.
 
 ## 🛠️ How it Works
 
-1. **Initialization**: On load, the app indexes thousands of TNEB boundary polygons and office points into a spatial index within a background Web Worker.
-2. **Deterministic Lookup**: By parsing the **Region** (digits 1-2) and **Section Office** (digits 3-5) from your consumer number, the app performs an authoritative match against the TNEB administrative hierarchy.
-3. **Spatial Search**: For GPS lookups, the app performs a point-in-polygon check to find your current jurisdiction and high-speed proximity sorting for the nearest office point.
+1. **Initialization**: On load, the app indexes boundary polygons, office points, and a precomputed administrative lookup table (`unified_index.json`) into an O(1) spatial index within a Web Worker.
+2. **Unified Resolution**: The engine resolves jurisdiction using a strict precedence order (**Consumer Number > Boundary > Proximity**).
+3. **Identity Enrichment**: For every match, the app pulls detailed administrative metadata, including Section Name and Subdivision Code, from the unified index to provide a complete jurisdiction profile.
 
 ## 📦 Tech Stack
 
-- **GIS Engine**: Custom JavaScript Web Worker with spatial indexing.
-- **Mapping**: Leaflet.js for interactive visualization.
-- **UI**: Vanilla HTML5/CSS3 with premium glass-morphism aesthetics.
-- **Icons**: Lucide Icons for modern, sharp iconography.
+- **GIS Engine**: Custom Web Worker with **Unified Indexing** for O(1) lookups.
+- **Mapping**: Leaflet.js for interactive spatial visualization.
+- **UI**: Vanilla HTML5/CSS3 with premium **Glass-morphism** design system.
+- **Icons**: Lucide Icons for consistent, modern iconography.
+- **Optimization**: Vite-driven build process with offline-first caching strategies.
 
 ## ⚖️ License
 

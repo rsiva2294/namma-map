@@ -172,6 +172,10 @@ function triggerGPS() {
     const fabBtn = document.getElementById('fab-gps');
     
     const setLoader = (loading) => {
+        const toast = document.getElementById('status-toast');
+        if (loading) toast.classList.remove('hidden');
+        else toast.classList.add('hidden');
+
         [mainBtn, fabBtn].forEach(btn => {
             if (!btn) return;
             if (loading) {
@@ -270,102 +274,119 @@ const UIRenderer = {
         const panel = document.getElementById('results-panel');
         this.clearOverlays();
         
-        const { matched_boundary, matched_office, match_type, coords, source, consumer_number, match_confidence, ambiguous } = data;
-
-        // Update Address context
-        if (matched_boundary) {
-            AppState.address = `${matched_boundary.section}, ${matched_boundary.subdivision}`;
-        } else {
-            AppState.address = source === 'CONSUMER_NUMBER' ? "Administrative Match" : "Unknown Location";
-        }
+        const { 
+            match_type, confidence, driver, section_key,
+            boundary, office, section_name, subdivision_code, distributions,
+            validation, coords, consumer_number 
+        } = data;
 
         // 1. Render Polygons/Markers
-        if (matched_boundary?.geometry) {
-            AppState.boundaryLayer = L.polygon(matched_boundary.geometry.map(p => [p[1], p[0]]), {
+        if (boundary?.geometry) {
+            AppState.boundaryLayer = L.polygon(boundary.geometry.map(p => [p[1], p[0]]), {
                 color: '#2563eb', fillColor: '#3b82f6', fillOpacity: 0.15, weight: 2, dashArray: '5, 10'
             }).addTo(AppState.map);
             
-            // Smart Centering: Fit to Boundary
+            // Smart Centering
             AppState.map.fitBounds(AppState.boundaryLayer.getBounds(), { padding: [50, 50], maxZoom: 15 });
-        } else if (matched_office?.coords) {
-            // Fallback: Center on Office point
-            AppState.map.setView(matched_office.coords, 15);
+        } else if (office?.coords) {
+            AppState.map.setView(office.coords, 15);
         }
 
-        if (matched_office?.coords) {
+        if (office?.coords) {
             const zapIcon = L.divIcon({
                 className: 'office-marker',
                 html: '<div class="zap-icon-bg"><i data-lucide="zap"></i></div>',
                 iconSize: [32, 32], iconAnchor: [16, 32]
             });
-            AppState.officeMarker = L.marker(matched_office.coords, { icon: zapIcon }).addTo(AppState.map);
-            AppState.officeMarker.bindPopup(`<b>${matched_office.name}</b><br>Section Office`);
+            AppState.officeMarker = L.marker(office.coords, { icon: zapIcon }).addTo(AppState.map);
+            AppState.officeMarker.bindPopup(`<b>${office.name}</b><br>Section Office`);
         }
 
-        // 2. Build HTML
-        const isConsumer = source === 'CONSUMER_NUMBER';
+        // 2. Build Badge info
+        let badgeLabel = 'Unknown';
+        let badgeClass = 'status-unmatched';
+        
+        switch (match_type) {
+            case 'official':
+                badgeLabel = 'Verified Match';
+                badgeClass = 'status-official';
+                break;
+            case 'consumer_only':
+                badgeLabel = 'From Consumer Number';
+                badgeClass = 'status-consumer';
+                break;
+            case 'boundary_only':
+                badgeLabel = 'Limited Data';
+                badgeClass = 'status-warning';
+                break;
+            case 'approximate':
+                badgeLabel = 'Approximate (Nearest)';
+                badgeClass = 'status-unmatched';
+                break;
+        }
+
+        // 3. Build HTML
+        const isConsumerDriver = driver === 'consumer';
         let html = `
             <div class="selection-header">
-                <i data-lucide="${isConsumer ? 'zap' : 'map-pin'}" class="icon-primary"></i>
+                <i data-lucide="${isConsumerDriver ? 'zap' : 'map-pin'}" class="icon-primary"></i>
                 <div class="selection-info">
-                    <span class="selection-label">${isConsumer ? 'CONSUMER NUMBER' : 'SELECTED LOCATION'}</span>
-                    <span class="selection-address">${isConsumer ? consumer_number : AppState.address}</span>
-                    <span class="selection-coords">${isConsumer ? `Region: ${data.parsed.region_code} | Section: ${data.parsed.section_code}` : coords.lat.toFixed(4) + ', ' + coords.lng.toFixed(4)}</span>
+                    <span class="selection-label">${isConsumerDriver ? 'CONSUMER NUMBER' : 'SELECTED LOCATION'}</span>
+                    <span class="selection-address">${isConsumerDriver ? consumer_number : (section_name + ', ' + subdivision_code)}</span>
+                    <span class="selection-coords">${section_key ? `ID: ${section_key}` : (coords ? coords.lat.toFixed(4) + ', ' + coords.lng.toFixed(4) : '')}</span>
                 </div>
             </div>
         `;
 
-        if (matched_boundary) {
+        // 4. Validation Warning
+        if (validation.status === 'mismatch') {
             html += `
-                <div class="glass-panel jurisdiction-card card">
+                <div class="glass-panel warning-card card mismatch-warning">
                     <div class="card-header">
-                        <i data-lucide="info" class="icon-primary"></i>
-                        <h3>Primary Jurisdiction</h3>
+                        <i data-lucide="alert-triangle" class="icon-warning"></i>
+                        <h3 class="text-warning">Jurisdiction Mismatch</h3>
                     </div>
-                    <div class="hierarchy-grid">
-                        ${this.renderHItem("SECTION", matched_boundary.section)}
-                        ${this.renderHItem("SUBDIVISION", matched_boundary.subdivision)}
-                        ${this.renderHItem("DIVISION", matched_boundary.division)}
-                        ${this.renderHItem("CIRCLE", matched_boundary.circle)}
-                        ${this.renderHItem("REGION", matched_boundary.region)}
-                        ${this.renderHItem("TYPE", matched_boundary.type)}
+                    <div class="mismatch-details">
+                        <div class="mismatch-item"><span>Consumer:</span> <b>${validation.consumer_section}</b></div>
+                        <div class="mismatch-item"><span>Location:</span> <b>${validation.location_section}</b></div>
                     </div>
+                    <p class="mismatch-note">Consumer number belongs to a different EB section than your current location.</p>
                 </div>
             `;
         }
 
-        if (matched_office) {
-            let label = 'Unknown';
-            let labelClass = '';
+        // 5. Jurisdiction Card
+        html += `
+            <div class="glass-panel jurisdiction-card card">
+                <div class="card-header">
+                    <i data-lucide="info" class="icon-primary"></i>
+                    <h3>Jurisdiction Details</h3>
+                    <span class="badge ${badgeClass}">${badgeLabel}</span>
+                </div>
+                <div class="hierarchy-grid">
+                    ${this.renderHItem("SECTION", section_name)}
+                    ${this.renderHItem("SUBDIVISION", subdivision_code)}
+                    ${boundary ? this.renderHItem("DIVISION", boundary.division) : ''}
+                    ${boundary ? this.renderHItem("CIRCLE", boundary.circle) : ''}
+                    ${boundary ? this.renderHItem("REGION", boundary.region) : ''}
+                </div>
+            </div>
+        `;
 
-            if (match_type === 'official') {
-                label = 'Matched';
-                labelClass = 'status-official';
-            } else {
-                label = 'No Official Match';
-                labelClass = 'status-unmatched';
-            }
-
-            if (ambiguous) {
-                label += ' (AMBIGUOUS)';
-            }
-
-
-
-            const navUrl = `https://www.google.com/maps/dir/?api=1&destination=${matched_office.coords[0]},${matched_office.coords[1]}`;
-
+        // 6. Office Card
+        if (office) {
+            const navUrl = `https://www.google.com/maps/dir/?api=1&destination=${office.coords[0]},${office.coords[1]}`;
             html += `
                 <div class="glass-panel office-card card">
                     <div class="card-header">
                         <i data-lucide="navigation" class="icon-primary"></i>
                         <h3>Section Office</h3>
-                        <span class="badge ${labelClass}">${label}</span>
                     </div>
                     <div class="office-info">
-                        <div class="office-name">${matched_office.name}</div>
+                        <div class="office-name">${office.name}</div>
                         <div class="office-detail">
                             <i data-lucide="info" class="icon-muted"></i> 
-                            ${match_confidence ? 'Confidence: ' + match_confidence.toUpperCase() : '~' + matched_office.distance + ' km'}
+                            Confidence: ${confidence.toUpperCase()} ${office.distance !== 'N/A' ? `(${office.distance} km)` : ''}
                         </div>
                         <a href="${navUrl}" target="_blank" class="nav-btn">
                             <i data-lucide="navigation"></i> Directions

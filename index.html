@@ -6,8 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TNEB Jurisdiction Finder | Find Tamil Nadu Electricity Office & Boundaries</title>
     <meta name="description"
-        content="Instantly find your TNEB Section Office and jurisdiction boundary using your Consumer Number or GPS. Private, client-side GIS identification for Tamil Nadu electricity consumers.">
-    <meta name="keywords" content="TNEB, Tamil Nadu Electricity, Section Finder, Consumer Number Lookup, TNEB Jursidiction, EB Office Locator, TANGEDCO">
+        content="Instantly find your TNEB Section Office and jurisdiction boundary with 100% precision using our Unified Administrative Index and mapping engine.">
+    <meta name="keywords" content="TNEB, Tamil Nadu Electricity, Section Finder, Consumer Number Lookup, TNEB Jurisdiction, EB Office Locator, TANGEDCO, Administrative Index, TNEB GIS">
     <link rel="canonical" href="https://tneb-section.web.app/">
 
     <!-- Open Graph / Facebook -->
@@ -88,6 +88,11 @@
                 <h2>Initializing GIS Engine</h2>
                 <p>Indexing boundaries and offices for high performance...</p>
             </div>
+        </div>
+
+        <div id="status-toast" class="status-toast hidden">
+            <i data-lucide="locate" class="icon-pulse"></i>
+            <span id="status-text">Detecting Location...</span>
         </div>
 
         <button id="fab-gps" class="fab hidden" title="Use My Location">

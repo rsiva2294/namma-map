@@ -2,6 +2,7 @@
 
 let boundaries = null;
 let offices = null;
+let indexMap = new Map();
 
 // Ray-casting algorithm for Point-in-Polygon check
 function isPointInPolygon(point, vs) {
@@ -32,9 +33,9 @@ function getDistance(lat1, lon1, lat2, lon2) {
 // Map GeoJSON results to the requested hierarchy
 function formatJurisdiction(props) {
     return {
-        section: props.section_na || 'N/A',
-        sectionCode: props.section_co || 'N/A',
-        subdivision: props.subdivisio || 'N/A',
+        section: props.section_na || props.section_name || 'N/A',
+        sectionCode: props.section_co || props.section_code || 'N/A',
+        subdivision: props.subdivisio || props.subdivision_code || 'N/A',
         division: props.division_n || 'N/A',
         circle: props.circle_nam || 'N/A',
         region: props.region_nam || 'N/A',
@@ -42,10 +43,22 @@ function formatJurisdiction(props) {
     };
 }
 
+// Helpers
+function buildKey(region, section) {
+    return `${String(region || "").padStart(2, '0')}_${String(section || "").padStart(3, '0')}`;
+}
+
+function scoreDistribution(name) {
+    const n = String(name || "").toLowerCase();
+    if (n.includes("zone")) return 0;
+    if (n.includes("nagar")) return 1;
+    return 2;
+}
+
 // Handle initialization with Persistent Caching
 async function init() {
     const CACHE_NAME = 'tneb-gis-v1';
-    const FILES = ['TNEB_Section_Boundary.json', 'tneb_section_office.json'];
+    const FILES = ['TNEB_Section_Boundary.json', 'tneb_section_office.json', 'unified_index.json'];
 
     try {
         console.log('Worker: Initializing data (Checking Cache)...');
@@ -64,14 +77,14 @@ async function init() {
             return response.json();
         });
 
-        const [boundaryData, officeData] = await Promise.all(dataPromises);
+        const [boundaryData, officeData, indexData] = await Promise.all(dataPromises);
 
         // Index boundaries with BBoxes
         boundaries = boundaryData.features.map(f => {
-            const coords = f.geometry.coordinates[0];
+            const geometry = f.geometry.type === 'Polygon' ? f.geometry.coordinates[0] : f.geometry.coordinates[0][0];
             let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
             
-            for (const [lng, lat] of coords) {
+            for (const [lng, lat] of geometry) {
                 if (lng < minX) minX = lng;
                 if (lng > maxX) maxX = lng;
                 if (lat < minY) minY = lat;
@@ -80,12 +93,15 @@ async function init() {
 
             return {
                 bbox: [minX, minY, maxX, maxY],
-                geometry: coords,
+                geometry: geometry,
                 properties: f.properties
             };
         });
 
         offices = officeData.features;
+        
+        // Build Index Map
+        indexMap = new Map(Object.entries(indexData));
 
         self.postMessage({ type: 'READY' });
         console.log('Worker: Data indexed and ready.');
@@ -101,118 +117,123 @@ function normalize(val) {
 }
 
 // Search logic
-function processLocation(lat, lng) {
-    // 1. Find all containing polygons (Phase 1)
-    const matches = boundaries.filter(b => {
-        // Quick BBox check
-        if (lng < b.bbox[0] || lng > b.bbox[2] || lat < b.bbox[1] || lat > b.bbox[3]) {
-            return false;
-        }
-        // Accurate PIP check
-        return isPointInPolygon([lng, lat], b.geometry);
-    });
-
-    // 2. Priority logic: Corporation > Others (Sort priority, not filter)
-    const sortedMatches = [...matches].sort((a, b) => {
-        const typeA = normalize(a.properties.section_ty).toLowerCase();
-        const typeB = normalize(b.properties.section_ty).toLowerCase();
-        
-        const isCorpA = typeA.includes('corporation');
-        const isCorpB = typeB.includes('corporation');
-
-        if (isCorpA && !isCorpB) return -1;
-        if (!isCorpA && isCorpB) return 1;
-        return 0;
-    });
-
-    const matchedBoundary = sortedMatches.length > 0 ? sortedMatches[0] : null;
-
-    // 3. Find Office with Refined Tiered Logic (Phase 2)
-    let matchedOffice = null;
+function processRequest(lat, lng, consumerNumber) {
+    let matchedBoundary = null;
+    let indexEntry = null;
     let matchType = 'unmatched';
+    let confidence = 'low';
+    let driver = 'proximity';
+    let sectionKey = null;
 
-    if (matchedBoundary) {
-        const bProps = matchedBoundary.properties;
-        const bCircle = normalize(bProps.circle_cod);
-        const bSection = normalize(bProps.section_co);
-        const bRegion = normalize(bProps.region_cod);
-
-        // TIER 1: Official Administrative Match (Primary)
-        // Find all candidates matching {circle_cod}_{section_co}
-        const candidates = offices.filter(o => {
-            const oCircle = normalize(o.properties.circle_cod);
-            const oSection = normalize(o.properties.section_co);
-            return oCircle === bCircle && oSection === bSection;
+    // 1. Resolve Boundary (Spatial Truth)
+    if (lat && lng) {
+        matchedBoundary = boundaries.find(b => {
+            if (lng < b.bbox[0] || lng > b.bbox[2] || lat < b.bbox[1] || lat > b.bbox[3]) return false;
+            return isPointInPolygon([lng, lat], b.geometry);
         });
+    }
 
-        if (candidates.length > 0) {
-            // TIE-BREAKER: If multiple matching offices, choose nearest
-            let bestCandidate = candidates[0];
-            let minDist = Infinity;
+    // 2. Resolve Consumer Input
+    const parsedConsumer = parseConsumerNumber(consumerNumber);
+    const consumerKey = parsedConsumer ? buildKey(parsedConsumer.region, parsedConsumer.section) : null;
+    const consumerEntry = consumerKey ? indexMap.get(consumerKey) : null;
 
-            for (const cand of candidates) {
-                const dist = getDistance(lat, lng, cand.geometry.coordinates[1], cand.geometry.coordinates[0]);
-                if (dist < minDist) {
-                    minDist = dist;
-                    bestCandidate = cand;
-                }
-            }
-
-            matchedOffice = {
-                name: bestCandidate.properties.section_na,
-                distance: minDist.toFixed(2),
-                properties: bestCandidate.properties,
-                coords: [bestCandidate.geometry.coordinates[1], bestCandidate.geometry.coordinates[0]]
-            };
-
-            // VALIDATION: Cross-verify Region
-            const oRegion = normalize(bestCandidate.properties.region_id);
-            if (bRegion === oRegion) {
-                matchType = 'official';
-            } else {
-                matchType = 'official_with_warning';
-            }
+    // 3. Resolve Execution (Precedence: Consumer > Boundary > Proximity)
+    if (consumerEntry) {
+        sectionKey = consumerKey;
+        indexEntry = consumerEntry;
+        driver = 'consumer';
+        matchType = 'official';
+        confidence = 'high';
+        
+        // Find the geometric boundary for this consumer section if not already matched
+        if (!matchedBoundary || buildKey(matchedBoundary.properties.region_cod, matchedBoundary.properties.section_co) !== consumerKey) {
+             matchedBoundary = boundaries.find(b => buildKey(b.properties.region_cod, b.properties.section_co) === consumerKey);
+        }
+    } else if (matchedBoundary) {
+        const bProps = matchedBoundary.properties;
+        sectionKey = buildKey(bProps.region_cod, bProps.section_co);
+        indexEntry = indexMap.get(sectionKey);
+        
+        driver = 'boundary';
+        if (indexEntry) {
+            matchType = 'official';
+            confidence = 'high';
+        } else {
+            matchType = 'boundary_only';
+            confidence = 'low';
         }
     }
 
-    // TIER 2: Proximity Fallback (if no jurisdiction or Tier 1 match failed)
-    if (!matchedOffice) {
+    // 4. Fallback: Proximity (only if no boundary and no consumer match)
+    let fallbackOffice = null;
+    if (!matchedBoundary && !consumerEntry && lat && lng) {
         let minDistance = Infinity;
-        let nearestOffice = null;
-
         for (const office of offices) {
             const [olng, olat] = office.geometry.coordinates;
             const dist = getDistance(lat, lng, olat, olng);
             if (dist < minDistance) {
                 minDistance = dist;
-                nearestOffice = office;
+                fallbackOffice = office;
             }
         }
-
-        if (nearestOffice) {
-            matchedOffice = {
-                name: nearestOffice.properties.section_na,
-                distance: minDistance.toFixed(2),
-                properties: nearestOffice.properties,
-                coords: [nearestOffice.geometry.coordinates[1], nearestOffice.geometry.coordinates[0]]
-            };
-            matchType = 'proximity';
+        if (fallbackOffice) {
+            driver = 'proximity';
+            matchType = 'approximate';
+            confidence = 'low';
+            sectionKey = buildKey(fallbackOffice.properties.region_id, fallbackOffice.properties.section_co);
+            indexEntry = indexMap.get(sectionKey);
         }
     }
 
-    // Prepare result payload
-    self.postMessage({
-        type: 'RESULT',
-        data: {
-            matched_boundary: matchedBoundary ? {
-                ...formatJurisdiction(matchedBoundary.properties),
-                geometry: matchedBoundary.geometry
-            } : null,
-            matched_office: matchedOffice,
-            match_type: matchType,
-            coords: { lat, lng }
+    // 5. Build Standardized Response
+    const office = indexEntry?.office || matchedBoundary?.properties?.office || fallbackOffice?.properties || null;
+    const formattedOffice = office ? {
+        name: office.office_name || office.section_na || 'Unknown Office',
+        coords: office.lat ? [office.lat, office.lng] : (office.geometry ? [office.geometry.coordinates[1], office.geometry.coordinates[0]] : null),
+        distance: (lat && lng && office.lat) ? getDistance(lat, lng, office.lat, office.lng).toFixed(2) : "N/A"
+    } : null;
+
+    const distributions = (indexEntry?.distributions || [])
+        .sort((a, b) => scoreDistribution(a.name) - scoreDistribution(b.name) || a.name.localeCompare(b.name))
+        .slice(0, 3);
+
+    const result = {
+        match_type: matchType,
+        confidence: confidence,
+        driver: driver,
+        section_key: sectionKey,
+        
+        boundary: matchedBoundary ? {
+            ...formatJurisdiction(matchedBoundary.properties),
+            geometry: matchedBoundary.geometry
+        } : null,
+        
+        office: formattedOffice,
+        
+        section_name: indexEntry?.section_name || matchedBoundary?.properties?.section_na || 'Unknown Section',
+        subdivision_code: indexEntry?.subdivision_code || matchedBoundary?.properties?.subdivisio || 'N/A',
+        distributions: distributions,
+
+        validation: {
+            location_section: matchedBoundary ? indexMap.get(buildKey(matchedBoundary.properties.region_cod, matchedBoundary.properties.section_co))?.section_name || 'N/A' : 'N/A',
+            consumer_section: consumerEntry ? consumerEntry.section_name : 'N/A',
+            status: 'none'
         }
-    });
+    };
+
+    // Cross-check status (only if driven by boundary - consumer input overrides mismatch)
+    if (driver === 'boundary' && matchedBoundary && consumerEntry) {
+        const locationKey = buildKey(matchedBoundary.properties.region_cod, matchedBoundary.properties.section_co);
+        result.validation.status = locationKey === consumerKey ? 'match' : 'mismatch';
+    } else {
+        result.validation.status = 'none';
+    }
+
+    result.coords = (lat && lng) ? { lat, lng } : (formattedOffice?.coords ? { lat: formattedOffice.coords[0], lng: formattedOffice.coords[1] } : null);
+    result.consumer_number = consumerNumber;
+
+    self.postMessage({ type: 'RESULT', data: result });
 }
 
 
@@ -337,9 +358,9 @@ self.onmessage = (e) => {
     if (e.data.type === 'INIT') {
         init();
     } else if (e.data.type === 'PROCESS') {
-        processLocation(e.data.lat, e.data.lng);
+        processRequest(e.data.lat, e.data.lng, null);
     } else if (e.data.type === 'PROCESS_CONSUMER') {
-        processConsumerLocation(e.data.number, e.data.lastLocation);
+        processRequest(e.data.lastLocation?.lat, e.data.lastLocation?.lng, e.data.number);
     } else if (e.data.type === 'SEARCH') {
         performSectionSearch(e.data.query);
     }
