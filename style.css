@@ -609,16 +609,18 @@ body {
 
 /* Responsive Overhaul */
 @media (max-width: 640px) {
+    .main-header {
+        display: none !important;
+    }
+
     .side-panel {
         top: auto;
         left: 0;
         right: 0;
         bottom: 0;
-        bottom: constant(safe-area-inset-bottom);
-        bottom: env(safe-area-inset-bottom);
         width: 100%;
-        height: auto;
-        max-height: 45vh;
+        height: 120px; /* Collapsed state */
+        max-height: 85vh;
         gap: 0;
         border-radius: 24px 24px 0 0;
         background: var(--glass-bg);
@@ -626,22 +628,36 @@ body {
         border-top: 1px solid var(--glass-border);
         box-shadow: 0 -10px 40px rgba(0,0,0,0.1);
         padding-bottom: env(safe-area-inset-bottom);
+        z-index: 1100;
+        transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        flex-direction: column;
     }
 
-    .side-panel::before {
-        content: '';
+    .side-panel.expanded {
+        height: 75vh;
+    }
+
+    .drag-handle {
         width: 40px;
         height: 4px;
         background: rgba(0,0,0,0.1);
         border-radius: 2px;
-        margin: 8px auto;
+        margin: 12px auto;
         display: block;
+        cursor: pointer;
+        flex-shrink: 0;
     }
 
-    .main-header {
+    .consumer-search-container {
+        position: fixed;
         top: 10px;
-        padding: 8px 16px;
-        width: calc(100% - 32px);
+        left: 10px;
+        right: 10px;
+        width: calc(100% - 20px);
+        z-index: 1200;
+        background: var(--glass-bg) !important;
+        border: 1px solid var(--glass-border);
     }
 
     .logo h1 { font-size: 1.1rem; }
@@ -652,33 +668,67 @@ body {
     }
 
     .results-container {
+        padding: 12px;
+        gap: 12px;
+    }
+
+    .card {
         padding: 16px;
-        gap: 16px;
+        border-radius: 16px;
     }
 
-    #fab-gps {
-        bottom: 20px;
-        left: 20px;
-        right: auto;
+    .card-header h3 {
+        font-size: 0.75rem !important;
     }
 
-    .hierarchy-grid {
-        grid-template-columns: 1fr;
+    .h-item {
+        padding: 10px;
     }
 
-    .primary-btn, .secondary-btn {
-        padding: 14px;
-        font-size: 0.9rem;
+    .h-label {
+        font-size: 0.6rem;
+    }
+
+    .h-value {
+        font-size: 0.8rem;
+    }
+
+    .office-name {
+        font-size: 0.95rem;
+    }
+
+    .selection-address {
+        font-size: 0.85rem;
     }
 
     .selection-header {
-        padding: 12px;
+        padding: 10px;
+        margin-bottom: 12px;
+    }
+
+    .start-card {
+        padding: 20px;
+    }
+
+    .start-card h2 {
+        font-size: 1.2rem;
+    }
+
+    .start-card p {
+        font-size: 0.8rem;
         margin-bottom: 16px;
     }
 
-    /* Touch Optimization */
-    .search-input-group {
-        padding: 10px 16px;
+    #fab-gps {
+        bottom: 140px; /* Above the collapsed panel */
+        left: 15px;
+    }
+    
+    .status-toast {
+        top: 80px;
+        transform: translate(-50%, 0);
+        font-size: 0.85rem;
+        padding: 10px 20px;
     }
 }
 

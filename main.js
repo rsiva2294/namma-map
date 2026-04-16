@@ -102,6 +102,25 @@ function initEventListeners() {
             if (num) processConsumerSearch(num);
         }
     };
+
+    // Mobile Bottom Sheet Toggle
+    const dragHandle = document.getElementById('drag-handle');
+    const sidePanel = document.getElementById('side-panel');
+    if (dragHandle && sidePanel) {
+        dragHandle.onclick = () => {
+            if (window.innerWidth <= 640) {
+                sidePanel.classList.toggle('expanded');
+            }
+        };
+    }
+}
+
+function toggleMobilePanel(expand = true) {
+    if (window.innerWidth <= 640) {
+        const sidePanel = document.getElementById('side-panel');
+        if (expand) sidePanel.classList.add('expanded');
+        else sidePanel.classList.remove('expanded');
+    }
 }
 
 // --- Location Logic ---
@@ -111,6 +130,7 @@ async function processConsumerSearch(number) {
     document.getElementById('start-panel').classList.add('hidden');
     document.getElementById('fab-gps').classList.remove('hidden');
     document.getElementById('results-panel').classList.remove('hidden');
+    toggleMobilePanel(true);
 
     // Pass last known location for tie-breaking if available
     const lastLocation = AppState.currentLocation;
@@ -125,6 +145,7 @@ async function processLocation(lat, lng) {
     document.getElementById('start-panel').classList.add('hidden');
     document.getElementById('fab-gps').classList.remove('hidden');
     document.getElementById('results-panel').classList.remove('hidden');
+    toggleMobilePanel(true);
 
     if (!isInsideTN) {
         UIRenderer.clearOverlays();
