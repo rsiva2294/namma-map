@@ -11,8 +11,16 @@ A high-performance, privacy-first GIS application designed to help Tamil Nadu el
 - **Privacy First**: All GIS indexing and matching happen locally in your browser. No consumer data or location information ever leaves your device.
 - **Premium Mobile Experience**:
   - **Draggable Bottom Sheet**: Native-feeling gesture controls to expand/collapse results.
+  - **Sticky Results Header**: Core actions (Back, Selection Info) remain pinned to the top while scrolling through jurisdiction details.
+  - **Smart Visibility**: Search guidance and floating elements automatically adapt to screen state to maximize map visibility.
   - **Quick Navigation**: Instant Google Maps directions from both map popups and detail cards.
-  - **Optimized Layout**: Top-fixed search and high information density for small screens.
+
+## 🎨 Visual Excellence
+
+- **Glassmorphism Design**: Modern, translucent UI components that blend seamlessly with the interactive map.
+- **Contextual Search Guidance**: Hoverable region code examples (03-North, 04-Central, etc.) to help users find their 12-digit consumer numbers.
+- **Micro-Animations**: Sequential fade-in effects and smooth panel transitions for a premium, alive application feel.
+- **Interactive Context**: Visual badges and hierarchy grids clearly display administrative identity.
 
 ## 🛠️ How it Works
 

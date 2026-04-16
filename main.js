@@ -225,6 +225,12 @@ function initEventListeners() {
     document.getElementById('explore-btn').onclick = () => {
         document.getElementById('start-panel').classList.add('hidden');
         document.getElementById('fab-gps').classList.remove('hidden');
+        
+        // Mobile: Hide the empty sheet until a result is found
+        if (window.innerWidth <= 640) {
+            document.getElementById('side-panel').classList.add('hidden');
+            toggleMobilePanel(false);
+        }
     };
 
     // Consumer Search
@@ -342,6 +348,15 @@ async function processConsumerSearch(number) {
     document.getElementById('fab-gps').classList.remove('hidden');
     document.getElementById('results-panel').classList.remove('hidden');
     
+    // Ensure side-panel is visible
+    document.getElementById('side-panel').classList.remove('hidden');
+
+    // Mobile: Hide search hint to reclaim space
+    if (window.innerWidth <= 640) {
+        document.querySelector('.consumer-search-container').classList.add('hidden');
+    }
+
+    
     // Give breathing room to see selection on map
     if (AppState.expandTimeout) clearTimeout(AppState.expandTimeout);
     AppState.expandTimeout = setTimeout(() => {
@@ -359,6 +374,15 @@ async function processLocation(lat, lng) {
     document.getElementById('start-panel').classList.add('hidden');
     document.getElementById('fab-gps').classList.remove('hidden');
     document.getElementById('results-panel').classList.remove('hidden');
+    
+    // Ensure side-panel is visible
+    document.getElementById('side-panel').classList.remove('hidden');
+    
+    // Mobile: Hide search hint to reclaim space
+    if (window.innerWidth <= 640) {
+        document.querySelector('.consumer-search-container').classList.add('hidden');
+    }
+
     
     // Give breathing room to see selection on map
     if (AppState.expandTimeout) clearTimeout(AppState.expandTimeout);
@@ -726,7 +750,10 @@ function resetApp() {
     document.getElementById('start-panel').classList.remove('hidden');
     document.getElementById('results-panel').classList.add('hidden');
     document.getElementById('fab-gps').classList.add('hidden');
-
+    
+    // Restore side-panel and search hint visibility
+    document.getElementById('side-panel').classList.remove('hidden');
+    document.querySelector('.consumer-search-container').classList.remove('hidden');
     // 4. Reset Map View
     AppState.map.flyTo([11.1271, 78.6569], 7);
 }

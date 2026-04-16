@@ -22,14 +22,26 @@ The application follows a strict precedence order to determine the primary juris
 2. **Boundary** (Spatial): Point-in-polygon match based on map location.
 3. **Proximity** (Last Resort): Nearest office if no boundary or consumer is found.
 
-## 📱 Mobile Gesture System
+## 📱 Mobile Gesture & UI System
 
-The application implements a custom draggable bottom sheet for mobile devices (`initDraggableSheet`):
+The application implements a custom draggable bottom sheet for mobile devices (`initDraggableSheet`) with several advanced behaviors:
 
+### Draggable Sheet Logic
 - **Real-time Tracking**: Uses `touchstart` and `touchmove` to track vertical finger movement on the drag handle.
-- **Threshold Snapping**: Autonomously snaps to "expanded" ($75\text{vh}$) or "collapsed" ($120\text{px}$) states based on a $15\%$ height delta threshold.
-- **Map Interaction Blocking**: Uses `L.DomEvent.disableClickPropagation` on UI elements (side panel and search container) to prevent map markers from being placed while interacting with the interface.
-- **UX Breathing Room**: Implements a $2.5$-$3\text{s}$ delay before auto-expanding the panel to allow users to visually confirm their selection on the map before the UI covers it.
+- **Threshold Snapping**: Autonomously snaps to "expanded" (85vh) or "collapsed" (120px) states based on a 15% height delta threshold.
+- **UX Breathing Room**: Implements a 2.5s-3s delay before auto-expanding the panel (`toggleMobilePanel(true)`) to allow users to visually confirm their selection.
+
+### Smart Panel Management
+- **Explore on Map**: Clicking explore minimizes the bottom sheet entirely on mobile (`classList.add('hidden')`) to clear the map view.
+- **Dynamic Visibility**: The consumer search guidance is automatically hidden when results are active on mobile to reclaim vertical space.
+- **Sticky Architecture**: The results panel uses a split layout: `#results-sticky-header` for controls and `#results-content` for scrollable content.
+- **Map Interaction Blocking**: Uses `L.DomEvent.disableClickPropagation` on UI elements to prevent phantom map clicks.
+
+## ✨ UI Architecture & Aesthetic Tokens
+
+- **Glassmorphism**: Implementation uses `backdrop-filter: blur()`, `--glass-bg` (translucent), and `--glass-border`.
+- **Sequential Animations**: Uses CSS animations (`fade-in`, `slide-in-bottom`) and transition classes (`panel-transition`) to manage state changes.
+- **Mobile Scrolling**: Specific inner-containers like `.start-card` and `.scrollable-results` use `overflow-y: auto` to ensure content accessibility within height-constrained panels.
 
 ## 🚀 Deployment
 
@@ -47,4 +59,4 @@ The project is configured for **Firebase Hosting**:
 
 - **Persistent Caching**: Data files are stored in the browser's Cache API during initialization to speed up subsequent loads.
 - **Precomputed Metadata**: The `unified_index.json` avoids expensive string matching by providing pre-linked metadata for every section key.
-- **Off-Main-Thread**: All resolution, sorting, and geometric checks happen in the background Worker, keeping the UI responsive during complex calculations.
+- **Off-Main-Thread**: All resolution, sorting, and geometric checks happen in the background Worker, keeping the UI responsive.
