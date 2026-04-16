@@ -141,6 +141,11 @@ function initDraggableSheet() {
     L.DomEvent.disableClickPropagation(panel);
     if (searchContainer) L.DomEvent.disableClickPropagation(searchContainer);
     L.DomEvent.disableScrollPropagation(panel);
+    
+    // Initial Peak State on Load
+    if (window.innerWidth <= 640 && !AppState.isSearching) {
+        panel.style.height = '42vh';
+    }
 
     let startY, startHeight;
     let isDragging = false;
@@ -159,9 +164,10 @@ function initDraggableSheet() {
         const delta = startY - currentY;
         const newHeight = startHeight + delta;
         
-        // Boundaries: 120px to 85vh
+        // Boundaries: 20vh to 85vh
         const maxHeight = window.innerHeight * 0.85;
-        if (newHeight >= 120 && newHeight <= maxHeight) {
+        const minHeight = window.innerHeight * 0.2; 
+        if (newHeight >= minHeight && newHeight <= maxHeight) {
             panel.style.height = `${newHeight}px`;
         }
     }, { passive: false });
@@ -177,15 +183,18 @@ function initDraggableSheet() {
         // Threshold: 15% of screen height OR a fixed delta of 60px
         const threshold = Math.min(window.innerHeight * 0.15, 60);
         
+        // Clear the inline style (including the initial 42vh) to let CSS classes take over
         panel.style.height = ''; 
         
         if (delta > threshold) {
+            // Dragged Up
             panel.classList.add('expanded');
         } else if (delta < -threshold) {
+            // Dragged Down
             panel.classList.remove('expanded');
         } else {
-            // Revert to original state if not enough drag
-            if (startHeight > window.innerHeight * 0.3) {
+            // Minor drag: stay in the most logical state
+            if (currentHeight > window.innerHeight * 0.5) {
                 panel.classList.add('expanded');
             } else {
                 panel.classList.remove('expanded');
