@@ -535,7 +535,7 @@ const UIRenderer = {
         
         const { 
             match_type, confidence, driver, section_key,
-            boundary, office, section_name, subdivision_code, distributions,
+            boundary, office, section_name, subdivision_code,
             validation, coords, consumer_number 
         } = data;
 

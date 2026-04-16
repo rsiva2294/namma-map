@@ -48,17 +48,10 @@ function buildKey(region, section) {
     return `${String(region || "").padStart(2, '0')}_${String(section || "").padStart(3, '0')}`;
 }
 
-function scoreDistribution(name) {
-    const n = String(name || "").toLowerCase();
-    if (n.includes("zone")) return 0;
-    if (n.includes("nagar")) return 1;
-    return 2;
-}
-
 // Handle initialization with Persistent Caching
 async function init() {
     const CACHE_NAME = 'tneb-gis-v1';
-    const FILES = ['/TNEB_Section_Boundary.json', '/tneb_section_office.json', '/unified_index.json', '/State_boundary.json'];
+    const FILES = ['/TNEB_Section_Boundary.json', '/tneb_section_office.json', '/unified_index_cleaned.json', '/State_boundary.json'];
 
     try {
         console.log('Worker: Initializing data (Checking Cache)...');
@@ -220,9 +213,8 @@ function processRequest(lat, lng, consumerNumber) {
         distance: (lat && lng && office.lat) ? getDistance(lat, lng, office.lat, office.lng).toFixed(2) : "N/A"
     } : null;
 
-    const distributions = (indexEntry?.distributions || [])
-        .sort((a, b) => scoreDistribution(a.name) - scoreDistribution(b.name) || a.name.localeCompare(b.name))
-        .slice(0, 3);
+    const distributions = (indexEntry?.distribution_codes || [])
+        .slice(0, 5); // Return up to 5 codes for technical reference
 
     const result = {
         match_type: matchType,
