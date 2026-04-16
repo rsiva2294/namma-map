@@ -1,5 +1,5 @@
 import L from 'leaflet';
-import { createIcons, Zap, Locate, Search, MapPin, Navigation, Info, Map, AlertTriangle, RefreshCw, ArrowLeft } from 'lucide';
+import { createIcons, Zap, Locate, Search, MapPin, Navigation, Info, Map, AlertTriangle, RefreshCw, ArrowLeft, Phone, ExternalLink, X } from 'lucide';
 
 /**
  * TNEB Jurisdiction Finder v2.0
@@ -18,7 +18,8 @@ const AppState = {
     expandTimeout: null,
     address: null,
     districts: [],
-    districtLayer: null
+    districtLayer: null,
+    districtGeoJSON: null // Lazy loaded full data
 };
 
 // --- Initialization ---
@@ -34,7 +35,7 @@ function init() {
 
 function initIcons() {
     createIcons({
-        icons: { Zap, Locate, Search, MapPin, Navigation, Info, Map, AlertTriangle, RefreshCw, ArrowLeft }
+        icons: { Zap, Locate, Search, MapPin, Navigation, Info, Map, AlertTriangle, RefreshCw, ArrowLeft, Phone, ExternalLink, X }
     });
 }
 
@@ -87,22 +88,14 @@ async function initStateBoundary() {
 
 async function initDistrictBoundaries() {
     try {
-        const response = await fetch('/Districts_boundary.json');
-        const data = await response.json();
+        // Optimization: Fetch only 4KB metadata initially instead of 15MB full GeoJSON
+        const response = await fetch('/districts_meta.json');
+        AppState.districts = await response.json();
         
-        AppState.districts = data.features.map(f => ({
-            name: f.properties.district_n,
-            bounds: L.geoJSON(f).getBounds(),
-            feature: f
-        })).sort((a, b) => a.name.localeCompare(b.name));
-
-        // Data is maintained in AppState.districts for the search dropdown, 
-        // but we don't need to render the visual layer as the base map already shows it.
         AppState.districtLayer = null; 
-
         setupDistrictSearch();
     } catch (err) {
-        console.error('Failed to load district boundaries:', err);
+        console.error('Failed to load district metadata:', err);
     }
 }
 
@@ -160,7 +153,7 @@ function renderDistrictResults(list) {
     results.classList.remove('hidden');
 }
 
-function selectDistrict(district) {
+async function selectDistrict(district) {
     const input = document.getElementById('district-search');
     const results = document.getElementById('district-results');
     
@@ -172,21 +165,37 @@ function selectDistrict(district) {
         AppState.map.removeLayer(AppState.districtLayer);
     }
 
-    // 2. Draw selected district border
-    AppState.districtLayer = L.geoJSON(district.feature, {
-        style: {
-            color: '#2563eb',
-            weight: 3,
-            fillOpacity: 0.1,
-            fillColor: '#3b82f6',
-            interactive: false
-        }
-    }).addTo(AppState.map);
-
+    // 2. Fly to bounds immediately (using meta or cached total bounds)
     AppState.map.flyToBounds(district.bounds, {
         padding: [50, 50],
         duration: 1.5
     });
+
+    // 3. Lazy Load and Draw Highlight
+    try {
+        if (!AppState.districtGeoJSON) {
+            const response = await fetch('/Districts_boundary.json');
+            AppState.districtGeoJSON = await response.json();
+        }
+
+        const feature = AppState.districtGeoJSON.features.find(f => 
+            f.properties.district_n === district.name
+        );
+
+        if (feature) {
+            AppState.districtLayer = L.geoJSON(feature, {
+                style: {
+                    color: '#2563eb',
+                    weight: 3,
+                    fillOpacity: 0.1,
+                    fillColor: '#3b82f6',
+                    interactive: false
+                }
+            }).addTo(AppState.map);
+        }
+    } catch (err) {
+        console.error('Failed to lazy load district geometry:', err);
+    }
 }
 
 function initWorker() {
@@ -496,7 +505,8 @@ const UIRenderer = {
     },
 
     renderResults(data) {
-        const panel = document.getElementById('results-panel');
+        const header = document.getElementById('results-sticky-header');
+        const content = document.getElementById('results-content');
         this.clearOverlays();
         
         const { 
@@ -569,9 +579,9 @@ const UIRenderer = {
                 break;
         }
 
-        // 3. Build HTML
+        // 3. Build Header HTML (Sticky)
         const isConsumerDriver = driver === 'consumer';
-        let html = `
+        let headerHtml = `
             <div class="results-toolbar">
                 <button class="back-link-btn" onclick="resetApp()" title="Return to Search">
                     <i data-lucide="arrow-left"></i>
@@ -589,10 +599,15 @@ const UIRenderer = {
             </div>
         `;
 
+        header.innerHTML = headerHtml;
+
+        // 4. Build Content HTML (Scrollable)
+        let contentHtml = '';
+
         // 4. Validation Warning
         if (validation.status === 'mismatch') {
-            html += `
-                <div class="glass-panel warning-card card mismatch-warning">
+            contentHtml += `
+                <div class="glass-panel warning-card card mismatch-warning fade-in">
                     <div class="card-header">
                         <i data-lucide="alert-triangle" class="icon-warning"></i>
                         <h3 class="text-warning">Jurisdiction Mismatch</h3>
@@ -606,9 +621,8 @@ const UIRenderer = {
             `;
         }
 
-        // 5. Jurisdiction Card
-        html += `
-            <div class="glass-panel jurisdiction-card card">
+        contentHtml += `
+            <div class="glass-panel jurisdiction-card card fade-in">
                 <div class="card-header">
                     <i data-lucide="info" class="icon-primary"></i>
                     <h3>Jurisdiction Details</h3>
@@ -624,11 +638,10 @@ const UIRenderer = {
             </div>
         `;
 
-        // 6. Office Card
         if (office) {
             const navUrl = `https://www.google.com/maps/dir/?api=1&destination=${office.coords[0]},${office.coords[1]}`;
-            html += `
-                <div class="glass-panel office-card card">
+            contentHtml += `
+                <div class="glass-panel office-card card fade-in">
                     <div class="card-header">
                         <i data-lucide="navigation" class="icon-primary"></i>
                         <h3>Section Office</h3>
@@ -647,7 +660,8 @@ const UIRenderer = {
             `;
         }
 
-        panel.innerHTML = html;
+        content.innerHTML = contentHtml;
+        content.scrollTop = 0; // Reset scroll view
         initIcons();
     },
 
@@ -658,9 +672,20 @@ const UIRenderer = {
     },
 
     renderError(title, msg) {
-        const panel = document.getElementById('results-panel');
-        panel.innerHTML = `
-            <div class="glass-panel error-card card">
+        const header = document.getElementById('results-sticky-header');
+        const content = document.getElementById('results-content');
+        
+        header.innerHTML = `
+            <div class="results-toolbar">
+                <button class="back-link-btn" onclick="resetApp()" title="Return to Search">
+                    <i data-lucide="arrow-left"></i>
+                    <span>Back to Search</span>
+                </button>
+            </div>
+        `;
+
+        content.innerHTML = `
+            <div class="glass-panel error-card card fade-in">
                 <div class="card-header">
                     <i data-lucide="alert-triangle" style="color: var(--danger)"></i>
                     <h3 style="color: var(--danger)">${title}</h3>

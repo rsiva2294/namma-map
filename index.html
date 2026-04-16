@@ -50,6 +50,18 @@
                         <i data-lucide="search"></i>
                     </button>
                 </div>
+                <div class="search-help">
+                    <span>Example: <b>04</b>-XXX-XXX-XXXX (Chennai South)</span>
+                    <div class="help-popover" id="consumer-help-popover">
+                        <p>First 2 digits are the Region Code:</p>
+                        <ul>
+                            <li><b>03:</b> Chennai North</li>
+                            <li><b>04:</b> Chennai South</li>
+                            <li><b>05:</b> Coimbatore</li>
+                            <li><b>09:</b> Madurai</li>
+                        </ul>
+                    </div>
+                </div>
             </div>
 
             <!-- Start Card (Choice Screen) -->
@@ -80,11 +92,42 @@
                         <div id="district-results" class="combo-results hidden"></div>
                     </div>
                 </div>
+
+            <!-- Quick Links & Contact -->
+            <div class="panel-section quick-links">
+                <h3>Public Services</h3>
+                <div class="link-grid">
+                    <a href="https://www.tnebnet.org/qwp/qpay" target="_blank" class="link-card">
+                        <i data-lucide="zap"></i>
+                        <span>Quick Pay</span>
+                    </a>
+                    <a href="https://www.tnebltd.gov.in/outages/viewshutdown.xhtml" target="_blank" class="link-card">
+                        <i data-lucide="external-link"></i>
+                        <span>Outage Info</span>
+                    </a>
+                    <a href="tel:9498794987" class="link-card">
+                        <i data-lucide="phone"></i>
+                        <span>Helpline</span>
+                    </a>
+                    <a href="https://x.com/TANGEDCO_Offcl" target="_blank" class="link-card">
+                        <i data-lucide="x"></i>
+                        <span>Social Hub</span>
+                    </a>
+                </div>
             </div>
 
-            <div id="results-panel" class="results-container hidden">
-                <!-- Selected Location Header will go here -->
-                <!-- Data will be injected here -->
+            <!-- Disclaimer Footer -->
+            <footer class="side-panel-footer">
+                <p><strong>Disclaimer:</strong> This website is an independent individual effort for public utility. We are <strong>not</strong> officially affiliated with TNEB / TANGEDCO or any government entity.</p>
+            </footer>
+            </div>
+
+            <div id="results-panel" class="results-container hidden panel-transition">
+                <!-- Sticky Header Container -->
+                <div id="results-sticky-header" class="sticky-header-wrapper"></div>
+                
+                <!-- Scrollable Content -->
+                <div id="results-content" class="scrollable-results"></div>
             </div>
         </aside>
 
