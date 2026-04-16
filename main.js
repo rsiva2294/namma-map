@@ -287,7 +287,11 @@ const UIRenderer = {
             }).addTo(AppState.map);
             
             // Smart Centering
-            AppState.map.fitBounds(AppState.boundaryLayer.getBounds(), { padding: [50, 50], maxZoom: 15 });
+            const isMobile = window.innerWidth <= 640;
+            AppState.map.fitBounds(AppState.boundaryLayer.getBounds(), { 
+                padding: isMobile ? [20, 20, 150, 20] : [50, 50, 50, 50], 
+                maxZoom: 15 
+            });
         } else if (office?.coords) {
             AppState.map.setView(office.coords, 15);
         }
