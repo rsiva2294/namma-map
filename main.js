@@ -253,30 +253,30 @@ const UIRenderer = {
         const panel = document.getElementById('results-panel');
         this.clearOverlays();
         
-        const { jurisdiction, nearestOffice, additionalSections, coords, matchMethod } = data;
+        const { matched_boundary, matched_office, match_type, coords } = data;
 
         // Update Address context from local attributes
-        if (jurisdiction) {
-            AppState.address = `${jurisdiction.section}, ${jurisdiction.subdivision}`;
+        if (matched_boundary) {
+            AppState.address = `${matched_boundary.section}, ${matched_boundary.subdivision}`;
         } else {
             AppState.address = "Unknown Location";
         }
 
         // 1. Render Polygons/Markers
-        if (jurisdiction?.geometry) {
-            AppState.boundaryLayer = L.polygon(jurisdiction.geometry.map(p => [p[1], p[0]]), {
+        if (matched_boundary?.geometry) {
+            AppState.boundaryLayer = L.polygon(matched_boundary.geometry.map(p => [p[1], p[0]]), {
                 color: '#2563eb', fillColor: '#3b82f6', fillOpacity: 0.15, weight: 2, dashArray: '5, 10'
             }).addTo(AppState.map);
         }
 
-        if (nearestOffice?.coords) {
+        if (matched_office?.coords) {
             const zapIcon = L.divIcon({
                 className: 'office-marker',
                 html: '<div class="zap-icon-bg"><i data-lucide="zap"></i></div>',
                 iconSize: [32, 32], iconAnchor: [16, 32]
             });
-            AppState.officeMarker = L.marker(nearestOffice.coords, { icon: zapIcon }).addTo(AppState.map);
-            AppState.officeMarker.bindPopup(`<b>${nearestOffice.name}</b><br>Section Office`);
+            AppState.officeMarker = L.marker(matched_office.coords, { icon: zapIcon }).addTo(AppState.map);
+            AppState.officeMarker.bindPopup(`<b>${matched_office.name}</b><br>Section Office`);
         }
 
         // 2. Build HTML
@@ -291,7 +291,7 @@ const UIRenderer = {
             </div>
         `;
 
-        if (jurisdiction) {
+        if (matched_boundary) {
             html += `
                 <div class="glass-panel jurisdiction-card card">
                     <div class="card-header">
@@ -299,21 +299,33 @@ const UIRenderer = {
                         <h3>Primary Jurisdiction</h3>
                     </div>
                     <div class="hierarchy-grid">
-                        ${this.renderHItem("SECTION", jurisdiction.section)}
-                        ${this.renderHItem("SUBDIVISION", jurisdiction.subdivision)}
-                        ${this.renderHItem("DIVISION", jurisdiction.division)}
-                        ${this.renderHItem("CIRCLE", jurisdiction.circle)}
-                        ${this.renderHItem("REGION", jurisdiction.region)}
-                        ${this.renderHItem("TYPE", jurisdiction.type)}
+                        ${this.renderHItem("SECTION", matched_boundary.section)}
+                        ${this.renderHItem("SUBDIVISION", matched_boundary.subdivision)}
+                        ${this.renderHItem("DIVISION", matched_boundary.division)}
+                        ${this.renderHItem("CIRCLE", matched_boundary.circle)}
+                        ${this.renderHItem("REGION", matched_boundary.region)}
+                        ${this.renderHItem("TYPE", matched_boundary.type)}
                     </div>
                 </div>
             `;
         }
 
-        if (nearestOffice) {
-            const label = matchMethod.includes('OFFICIAL') ? 'Matched' : 'Nearest (Proximity)';
-            const labelClass = matchMethod.includes('OFFICIAL') ? 'status-official' : 'status-proximity';
-            const navUrl = `https://www.google.com/maps/dir/?api=1&destination=${nearestOffice.coords[0]},${nearestOffice.coords[1]}`;
+        if (matched_office) {
+            let label = 'Unknown';
+            let labelClass = '';
+
+            if (match_type === 'official') {
+                label = 'Matched';
+                labelClass = 'status-official';
+            } else if (match_type === 'official_with_warning') {
+                label = 'Code Match (Region Mismatch)';
+                labelClass = 'status-warning';
+            } else if (match_type === 'proximity') {
+                label = 'Nearest (Proximity)';
+                labelClass = 'status-proximity';
+            }
+
+            const navUrl = `https://www.google.com/maps/dir/?api=1&destination=${matched_office.coords[0]},${matched_office.coords[1]}`;
 
             html += `
                 <div class="glass-panel office-card card">
@@ -323,8 +335,8 @@ const UIRenderer = {
                         <span class="badge ${labelClass}">${label}</span>
                     </div>
                     <div class="office-info">
-                        <div class="office-name">${nearestOffice.name}</div>
-                        <div class="office-detail"><i data-lucide="navigation" class="icon-muted"></i> ~${nearestOffice.distance} km</div>
+                        <div class="office-name">${matched_office.name}</div>
+                        <div class="office-detail"><i data-lucide="navigation" class="icon-muted"></i> ~${matched_office.distance} km</div>
                         <a href="${navUrl}" target="_blank" class="nav-btn">
                             <i data-lucide="navigation"></i> Directions
                         </a>
@@ -336,6 +348,7 @@ const UIRenderer = {
         panel.innerHTML = html;
         initIcons();
     },
+
 
     renderHItem(label, value) {
         return `<div class="h-item"><span class="h-label">${label}</span><span class="h-value">${value}</span></div>`;

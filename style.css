@@ -382,6 +382,13 @@ body {
   border: 1px solid rgba(37, 99, 235, 0.2);
 }
 
+.status-warning {
+  background: rgba(234, 179, 8, 0.1);
+  color: #ca8a04;
+  border: 1px solid rgba(234, 179, 8, 0.2);
+}
+
+
 .card-header {
   display: flex;
   align-items: center;

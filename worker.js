@@ -95,9 +95,14 @@ async function init() {
     }
 }
 
+// Safe normalization helper
+function normalize(val) {
+    return String(val || "").trim();
+}
+
 // Search logic
 function processLocation(lat, lng) {
-    // 1. Find all containing polygons
+    // 1. Find all containing polygons (Phase 1)
     const matches = boundaries.filter(b => {
         // Quick BBox check
         if (lng < b.bbox[0] || lng > b.bbox[2] || lat < b.bbox[1] || lat > b.bbox[3]) {
@@ -107,74 +112,109 @@ function processLocation(lat, lng) {
         return isPointInPolygon([lng, lat], b.geometry);
     });
 
-    // 2. Priority logic: Corporation > Others
+    // 2. Priority logic: Corporation > Others (Sort priority, not filter)
     const sortedMatches = [...matches].sort((a, b) => {
-        const typeA = (a.properties.section_ty || '').toLowerCase();
-        const typeB = (b.properties.section_ty || '').toLowerCase();
+        const typeA = normalize(a.properties.section_ty).toLowerCase();
+        const typeB = normalize(b.properties.section_ty).toLowerCase();
         
-        if (typeA.includes('corporation') && !typeB.includes('corporation')) return -1;
-        if (!typeA.includes('corporation') && typeB.includes('corporation')) return 1;
+        const isCorpA = typeA.includes('corporation');
+        const isCorpB = typeB.includes('corporation');
+
+        if (isCorpA && !isCorpB) return -1;
+        if (!isCorpA && isCorpB) return 1;
         return 0;
     });
 
-    const jurisdiction = sortedMatches.length > 0 ? {
-        ...formatJurisdiction(sortedMatches[0].properties),
-        geometry: sortedMatches[0].geometry
-    } : null;
-    const additionalSections = sortedMatches.slice(1).map(m => formatJurisdiction(m.properties));
+    const matchedBoundary = sortedMatches.length > 0 ? sortedMatches[0] : null;
 
-    // 3. Find Office with Tiered Logic
-    let nearest = null;
-    let matchMethod = 'PROXIMITY'; // Default
+    // 3. Find Office with Refined Tiered Logic (Phase 2)
+    let matchedOffice = null;
+    let matchType = 'unmatched';
 
-    if (jurisdiction) {
-        // SIMPLIFIED MATCH: Section Code + Region Name
-        const match = offices.find(o => 
-            String(o.properties.section_co) === String(jurisdiction.sectionCode) &&
-            String(o.properties.region_nam || '').toLowerCase().trim() === String(jurisdiction.region || '').toLowerCase().trim()
-        );
+    if (matchedBoundary) {
+        const bProps = matchedBoundary.properties;
+        const bCircle = normalize(bProps.circle_cod);
+        const bSection = normalize(bProps.section_co);
+        const bRegion = normalize(bProps.region_cod);
 
-        if (match) {
-            nearest = {
-                name: match.properties.section_na,
-                distance: getDistance(lat, lng, match.geometry.coordinates[1], match.geometry.coordinates[0]).toFixed(2),
-                properties: match.properties,
-                coords: [match.geometry.coordinates[1], match.geometry.coordinates[0]]
+        // TIER 1: Official Administrative Match (Primary)
+        // Find all candidates matching {circle_cod}_{section_co}
+        const candidates = offices.filter(o => {
+            const oCircle = normalize(o.properties.circle_cod);
+            const oSection = normalize(o.properties.section_co);
+            return oCircle === bCircle && oSection === bSection;
+        });
+
+        if (candidates.length > 0) {
+            // TIE-BREAKER: If multiple matching offices, choose nearest
+            let bestCandidate = candidates[0];
+            let minDist = Infinity;
+
+            for (const cand of candidates) {
+                const dist = getDistance(lat, lng, cand.geometry.coordinates[1], cand.geometry.coordinates[0]);
+                if (dist < minDist) {
+                    minDist = dist;
+                    bestCandidate = cand;
+                }
+            }
+
+            matchedOffice = {
+                name: bestCandidate.properties.section_na,
+                distance: minDist.toFixed(2),
+                properties: bestCandidate.properties,
+                coords: [bestCandidate.geometry.coordinates[1], bestCandidate.geometry.coordinates[0]]
             };
-            matchMethod = 'OFFICIAL_HEADQUARTERS';
-        } 
+
+            // VALIDATION: Cross-verify Region
+            const oRegion = normalize(bestCandidate.properties.region_id);
+            if (bRegion === oRegion) {
+                matchType = 'official';
+            } else {
+                matchType = 'official_with_warning';
+            }
+        }
     }
 
-    // TIER 3: Proximity Fallback (Previous Logic) if match fails or no jurisdiction
-    if (!nearest) {
+    // TIER 2: Proximity Fallback (if no jurisdiction or Tier 1 match failed)
+    if (!matchedOffice) {
         let minDistance = Infinity;
+        let nearestOffice = null;
+
         for (const office of offices) {
             const [olng, olat] = office.geometry.coordinates;
             const dist = getDistance(lat, lng, olat, olng);
             if (dist < minDistance) {
                 minDistance = dist;
-                nearest = {
-                    name: office.properties.section_na,
-                    distance: dist.toFixed(2),
-                    properties: office.properties,
-                    coords: [olat, olng]
-                };
+                nearestOffice = office;
             }
         }
-        matchMethod = 'NEAREST_PROXIMITY';
+
+        if (nearestOffice) {
+            matchedOffice = {
+                name: nearestOffice.properties.section_na,
+                distance: minDistance.toFixed(2),
+                properties: nearestOffice.properties,
+                coords: [nearestOffice.geometry.coordinates[1], nearestOffice.geometry.coordinates[0]]
+            };
+            matchType = 'proximity';
+        }
     }
 
+    // Prepare result payload
     self.postMessage({
         type: 'RESULT',
         data: {
-            jurisdiction,
-            additionalSections,
-            nearestOffice: nearest,
-            matchMethod,
+            matched_boundary: matchedBoundary ? {
+                ...formatJurisdiction(matchedBoundary.properties),
+                geometry: matchedBoundary.geometry
+            } : null,
+            matched_office: matchedOffice,
+            match_type: matchType,
             coords: { lat, lng }
         }
     });
 }
+
 
 // Perform fuzzy search across local boundaries
 function performSectionSearch(query) {
