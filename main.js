@@ -86,10 +86,37 @@ function initEventListeners() {
         document.getElementById('start-panel').classList.add('hidden');
         document.getElementById('fab-gps').classList.remove('hidden');
     };
+
+    // Consumer Search
+    const consumerInput = document.getElementById('consumer-number');
+    const searchBtn = document.getElementById('consumer-search-btn');
+    
+    searchBtn.onclick = () => {
+        const num = consumerInput.value.trim();
+        if (num) processConsumerSearch(num);
+    };
+
+    consumerInput.onkeypress = (e) => {
+        if (e.key === 'Enter') {
+            const num = consumerInput.value.trim();
+            if (num) processConsumerSearch(num);
+        }
+    };
 }
 
-
 // --- Location Logic ---
+
+async function processConsumerSearch(number) {
+    // Transition UI
+    document.getElementById('start-panel').classList.add('hidden');
+    document.getElementById('fab-gps').classList.remove('hidden');
+    document.getElementById('results-panel').classList.remove('hidden');
+
+    // Pass last known location for tie-breaking if available
+    const lastLocation = AppState.currentLocation;
+    AppState.worker.postMessage({ type: 'PROCESS_CONSUMER', number, lastLocation });
+}
+
 
 async function processLocation(lat, lng) {
     const isInsideTN = lat >= 8.0 && lat <= 14.0 && lng >= 75.0 && lng <= 81.0;
@@ -243,13 +270,13 @@ const UIRenderer = {
         const panel = document.getElementById('results-panel');
         this.clearOverlays();
         
-        const { matched_boundary, matched_office, match_type, coords } = data;
+        const { matched_boundary, matched_office, match_type, coords, source, consumer_number, match_confidence, ambiguous } = data;
 
-        // Update Address context from local attributes
+        // Update Address context
         if (matched_boundary) {
             AppState.address = `${matched_boundary.section}, ${matched_boundary.subdivision}`;
         } else {
-            AppState.address = "Unknown Location";
+            AppState.address = source === 'CONSUMER_NUMBER' ? "Administrative Match" : "Unknown Location";
         }
 
         // 1. Render Polygons/Markers
@@ -257,6 +284,12 @@ const UIRenderer = {
             AppState.boundaryLayer = L.polygon(matched_boundary.geometry.map(p => [p[1], p[0]]), {
                 color: '#2563eb', fillColor: '#3b82f6', fillOpacity: 0.15, weight: 2, dashArray: '5, 10'
             }).addTo(AppState.map);
+            
+            // Smart Centering: Fit to Boundary
+            AppState.map.fitBounds(AppState.boundaryLayer.getBounds(), { padding: [50, 50], maxZoom: 15 });
+        } else if (matched_office?.coords) {
+            // Fallback: Center on Office point
+            AppState.map.setView(matched_office.coords, 15);
         }
 
         if (matched_office?.coords) {
@@ -270,13 +303,14 @@ const UIRenderer = {
         }
 
         // 2. Build HTML
+        const isConsumer = source === 'CONSUMER_NUMBER';
         let html = `
             <div class="selection-header">
-                <i data-lucide="map-pin" class="icon-primary"></i>
+                <i data-lucide="${isConsumer ? 'zap' : 'map-pin'}" class="icon-primary"></i>
                 <div class="selection-info">
-                    <span class="selection-label">SELECTED LOCATION</span>
-                    <span class="selection-address">${AppState.address || 'Resolving address...'}</span>
-                    <span class="selection-coords">${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}</span>
+                    <span class="selection-label">${isConsumer ? 'CONSUMER NUMBER' : 'SELECTED LOCATION'}</span>
+                    <span class="selection-address">${isConsumer ? consumer_number : AppState.address}</span>
+                    <span class="selection-coords">${isConsumer ? `Region: ${data.parsed.region_code} | Section: ${data.parsed.section_code}` : coords.lat.toFixed(4) + ', ' + coords.lng.toFixed(4)}</span>
                 </div>
             </div>
         `;
@@ -285,7 +319,7 @@ const UIRenderer = {
             html += `
                 <div class="glass-panel jurisdiction-card card">
                     <div class="card-header">
-                        <i data-lucide="zap" class="icon-primary"></i>
+                        <i data-lucide="info" class="icon-primary"></i>
                         <h3>Primary Jurisdiction</h3>
                     </div>
                     <div class="hierarchy-grid">
@@ -307,26 +341,32 @@ const UIRenderer = {
             if (match_type === 'official') {
                 label = 'Matched';
                 labelClass = 'status-official';
-            } else if (match_type === 'official_with_warning') {
-                label = 'Code Match (Region Mismatch)';
-                labelClass = 'status-warning';
-            } else if (match_type === 'proximity') {
-                label = 'Nearest (Proximity)';
-                labelClass = 'status-proximity';
+            } else {
+                label = 'No Official Match';
+                labelClass = 'status-unmatched';
             }
+
+            if (ambiguous) {
+                label += ' (AMBIGUOUS)';
+            }
+
+
 
             const navUrl = `https://www.google.com/maps/dir/?api=1&destination=${matched_office.coords[0]},${matched_office.coords[1]}`;
 
             html += `
                 <div class="glass-panel office-card card">
                     <div class="card-header">
-                        <i data-lucide="map-pin" class="icon-primary"></i>
+                        <i data-lucide="navigation" class="icon-primary"></i>
                         <h3>Section Office</h3>
                         <span class="badge ${labelClass}">${label}</span>
                     </div>
                     <div class="office-info">
                         <div class="office-name">${matched_office.name}</div>
-                        <div class="office-detail"><i data-lucide="navigation" class="icon-muted"></i> ~${matched_office.distance} km</div>
+                        <div class="office-detail">
+                            <i data-lucide="info" class="icon-muted"></i> 
+                            ${match_confidence ? 'Confidence: ' + match_confidence.toUpperCase() : '~' + matched_office.distance + ' km'}
+                        </div>
                         <a href="${navUrl}" target="_blank" class="nav-btn">
                             <i data-lucide="navigation"></i> Directions
                         </a>
@@ -338,6 +378,7 @@ const UIRenderer = {
         panel.innerHTML = html;
         initIcons();
     },
+
 
 
     renderHItem(label, value) {

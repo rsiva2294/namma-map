@@ -4,10 +4,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TNEB Jurisdiction Finder</title>
+    <title>TNEB Jurisdiction Finder | Find Tamil Nadu Electricity Office & Boundaries</title>
     <meta name="description"
-        content="Identify your exact TNEB electricity jurisdiction and locate the nearest office using real-time GIS data.">
+        content="Instantly find your TNEB Section Office and jurisdiction boundary using your Consumer Number or GPS. Private, client-side GIS identification for Tamil Nadu electricity consumers.">
+    <meta name="keywords" content="TNEB, Tamil Nadu Electricity, Section Finder, Consumer Number Lookup, TNEB Jursidiction, EB Office Locator, TANGEDCO">
+    <link rel="canonical" href="https://tneb-section.web.app/">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://tneb-section.web.app/">
+    <meta property="og:title" content="TNEB Jurisdiction Finder">
+    <meta property="og:description" content="Find your exact TNEB electricity jurisdiction and nearest office using real-time GIS data.">
+    <meta property="og:image" content="https://tneb-section.web.app/preview.png">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://tneb-section.web.app/">
+    <meta property="twitter:title" content="TNEB Jurisdiction Finder">
+    <meta property="twitter:description" content="Find your exact TNEB electricity jurisdiction and nearest office using real-time GIS data.">
+    <meta property="twitter:image" content="https://tneb-section.web.app/preview.png">
+
     <link rel="stylesheet" href="style.css">
+
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 </head>
@@ -29,8 +47,19 @@
         <!-- Search / Info Panel -->
         <aside class="side-panel">
 
+            <!-- Consumer Number Search -->
+            <div class="glass-panel consumer-search-container">
+                <div class="search-input-group">
+                    <i data-lucide="zap" class="icon-primary"></i>
+                    <input type="text" id="consumer-number" placeholder="Enter your consumer number" autocomplete="off">
+                    <button id="consumer-search-btn" class="search-action-btn" title="Search by Consumer Number">
+                        <i data-lucide="search"></i>
+                    </button>
+                </div>
+            </div>
 
             <!-- Start Card (Choice Screen) -->
+
             <div id="start-panel" class="glass-panel start-card">
                 <h2>Find Your Jurisdiction</h2>
                 <p>Select how you want to find your electricity section</p>

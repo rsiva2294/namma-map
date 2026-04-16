@@ -216,35 +216,132 @@ function processLocation(lat, lng) {
 }
 
 
-// Perform fuzzy search across local boundaries
-function performSectionSearch(query) {
-    const q = (query || '').toLowerCase().trim();
-    if (q.length < 3) return [];
+// Consumer Number Parsing & Logic
+// Consumer Number Parsing & Logic
+function parseConsumerNumber(num) {
+    const cleanNum = String(num || "").trim();
+    if (!/^\d+$/.test(cleanNum) || cleanNum.length < 8) return null;
 
-    const results = boundaries
-        .filter(b => {
-            const name = (b.properties.section_na || '').toLowerCase();
-            const sub = (b.properties.subdivisio || '').toLowerCase();
-            const reg = (b.properties.region_nam || '').toLowerCase();
-            return name.includes(q) || sub.includes(q) || reg.includes(q);
-        })
-        .slice(0, 5) // Top 5 relevant matches
-        .map(b => ({
-            name: b.properties.section_na,
-            details: `${b.properties.subdivisio} / ${b.properties.region_nam}`,
-            center: [ (b.bbox[1] + b.bbox[3]) / 2, (b.bbox[0] + b.bbox[2]) / 2 ],
-            properties: b.properties
-        }));
-
-    self.postMessage({ type: 'SEARCH_RESULTS', data: results });
+    // Corrected Hierarchy extraction
+    // [Region (2)] + [Section Office (3)] + [Sub-section (3)] + [Consumer ID]
+    return {
+        region: cleanNum.slice(0, 2).padStart(2, "0"),
+        section: cleanNum.slice(2, 5).padStart(3, "0"), // Corrected mapping to section_co
+        subSection: cleanNum.slice(5, 8).padStart(3, "0"),
+        id: cleanNum.slice(8)
+    };
 }
+
+function processConsumerLocation(consumerNumber, lastKnownLocation) {
+    const parsed = parseConsumerNumber(consumerNumber);
+    if (!parsed) {
+        self.postMessage({ type: 'ERROR', message: 'Invalid Consumer Number format.' });
+        return;
+    }
+
+    const { region, section } = parsed;
+    
+    // Debugging Logs
+    console.log("--- TNEB Consumer Search Logic (Strict & Corrected) ---");
+    console.log("Parsed Codes:", { region, section });
+
+    let matchedOffice = null;
+    let matchedBoundary = null;
+    let matchType = 'unmatched';
+    let matchConfidence = 'low';
+    let ambiguous = false;
+
+    // 1. Strict Match Only (No Fallback)
+    const exactMatches = offices.filter(o => 
+        normalize(o.properties.region_id).padStart(2, "0") === region &&
+        normalize(o.properties.section_co).padStart(3, "0") === section
+    );
+
+    if (exactMatches.length > 0) {
+        matchType = 'official';
+        matchConfidence = 'high';
+        
+        // Tie-breaker: If multiple exact matches exist
+        if (exactMatches.length > 1) {
+            if (lastKnownLocation) {
+                let minDist = Infinity;
+                for (const cand of exactMatches) {
+                    const dist = getDistance(lastKnownLocation.lat, lastKnownLocation.lng, cand.geometry.coordinates[1], cand.geometry.coordinates[0]);
+                    if (dist < minDist) {
+                        minDist = dist;
+                        matchedOffice = cand;
+                    }
+                }
+                ambiguous = false;
+            } else {
+                matchedOffice = exactMatches[0];
+                ambiguous = true;
+            }
+        } else {
+            matchedOffice = exactMatches[0];
+        }
+    } else {
+        matchType = 'unmatched';
+        matchConfidence = 'low';
+        console.log(`Status: No exact Region (${region}) + Section (${section}) match found.`);
+    }
+
+    // 2. Boundary Match (Strict Only)
+    const officialBoundary = boundaries.find(b => 
+        normalize(b.properties.region_cod).padStart(2, "0") === region &&
+        normalize(b.properties.section_co).padStart(3, "0") === section
+    );
+
+    if (officialBoundary) {
+        matchedBoundary = officialBoundary;
+    }
+
+    // Formatted result for Office
+    const formattedOffice = matchedOffice ? {
+        name: matchedOffice.properties.section_na,
+        distance: lastKnownLocation ? getDistance(lastKnownLocation.lat, lastKnownLocation.lng, matchedOffice.geometry.coordinates[1], matchedOffice.geometry.coordinates[0]).toFixed(2) : "N/A",
+        properties: matchedOffice.properties,
+        coords: [matchedOffice.geometry.coordinates[1], matchedOffice.geometry.coordinates[0]]
+    } : null;
+
+    console.log("Final Outcome:", { matchType, confidence: matchConfidence, ambiguous });
+    console.log("-----------------------------------");
+
+    self.postMessage({
+        type: 'RESULT',
+        data: {
+            consumer_number: consumerNumber,
+            parsed: {
+                region_code: region,
+                section_code: section
+            },
+            match_key: `${region}_${section}`,
+            match_confidence: matchConfidence,
+            matched_boundary: matchedBoundary ? {
+                ...formatJurisdiction(matchedBoundary.properties),
+                geometry: matchedBoundary.geometry
+            } : null,
+            matched_office: formattedOffice,
+            match_type: matchType,
+            ambiguous,
+            coords: lastKnownLocation || (formattedOffice ? { lat: formattedOffice.coords[0], lng: formattedOffice.coords[1] } : null),
+            source: 'CONSUMER_NUMBER'
+        }
+    });
+}
+
+
+
 
 self.onmessage = (e) => {
     if (e.data.type === 'INIT') {
         init();
     } else if (e.data.type === 'PROCESS') {
         processLocation(e.data.lat, e.data.lng);
+    } else if (e.data.type === 'PROCESS_CONSUMER') {
+        processConsumerLocation(e.data.number, e.data.lastLocation);
     } else if (e.data.type === 'SEARCH') {
         performSectionSearch(e.data.query);
     }
 };
+
