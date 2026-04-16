@@ -86,18 +86,8 @@ function initEventListeners() {
         document.getElementById('start-panel').classList.add('hidden');
         document.getElementById('fab-gps').classList.remove('hidden');
     };
-
-    // Locality Search
-    const searchInput = document.getElementById('locality-search');
-    searchInput.oninput = (e) => handleSearchInput(e.target.value);
-    
-    // Close suggestions on click outside
-    document.addEventListener('click', (e) => {
-        if (!e.target.closest('.search-container')) {
-            UIRenderer.toggleSuggestions(false);
-        }
-    });
 }
+
 
 // --- Location Logic ---
 
