@@ -58,7 +58,7 @@ function scoreDistribution(name) {
 // Handle initialization with Persistent Caching
 async function init() {
     const CACHE_NAME = 'tneb-gis-v1';
-    const FILES = ['/TNEB_Section_Boundary.json', '/tneb_section_office.json', '/unified_index.json'];
+    const FILES = ['/TNEB_Section_Boundary.json', '/tneb_section_office.json', '/unified_index.json', '/State_boundary.json'];
 
     try {
         console.log('Worker: Initializing data (Checking Cache)...');
@@ -77,7 +77,11 @@ async function init() {
             return response.json();
         });
 
-        const [boundaryData, officeData, indexData] = await Promise.all(dataPromises);
+        const [boundaryData, officeData, indexData, stateData] = await Promise.all(dataPromises);
+
+        // Process State Boundary (MultiPolygon)
+        const stateGeometry = stateData.features[0].geometry;
+        self.statePolygons = stateGeometry.type === 'MultiPolygon' ? stateGeometry.coordinates : [stateGeometry.coordinates];
 
         // Index boundaries with BBoxes
         boundaries = boundaryData.features.map(f => {
@@ -119,11 +123,33 @@ function normalize(val) {
 // Search logic
 function processRequest(lat, lng, consumerNumber) {
     let matchedBoundary = null;
+    let sectionKey = null;
     let indexEntry = null;
     let matchType = 'unmatched';
     let confidence = 'low';
     let driver = 'proximity';
-    let sectionKey = null;
+
+    // 0. State Occupancy Validation
+    if (lat && lng) {
+        let insideState = false;
+        for (const multi of self.statePolygons) {
+            for (const poly of multi) {
+                if (isPointInPolygon([lng, lat], poly)) {
+                    insideState = true;
+                    break;
+                }
+            }
+            if (insideState) break;
+        }
+
+        if (!insideState) {
+            self.postMessage({ 
+                type: 'RESULT', 
+                data: { match_type: 'outside_state', coords: { lat, lng } } 
+            });
+            return;
+        }
+    }
 
     // 1. Resolve Boundary (Spatial Truth)
     if (lat && lng) {

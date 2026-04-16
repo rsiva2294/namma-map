@@ -25,6 +25,7 @@ function init() {
     initIcons();
     initMap();
     initWorker();
+    initStateBoundary();
     initEventListeners();
 }
 
@@ -40,9 +41,8 @@ function initMap() {
     AppState.map = L.map('map', {
         preferCanvas: true,
         zoomControl: false,
-        maxBounds: tnBounds,
         maxBoundsViscosity: 1.0,
-        minZoom: 7
+        minZoom: 6
     }).setView([11.1271, 78.6569], 7);
 
     L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
@@ -61,6 +61,25 @@ function initMap() {
     AppState.map.on('popupopen', () => {
         initIcons();
     });
+}
+
+async function initStateBoundary() {
+    try {
+        const response = await fetch('/State_boundary.json');
+        const data = await response.json();
+        
+        L.geoJSON(data, {
+            style: {
+                color: '#2563eb',
+                weight: 2,
+                dashArray: '5, 10',
+                fillOpacity: 0,
+                interactive: false
+            }
+        }).addTo(AppState.map);
+    } catch (err) {
+        console.error('Failed to load state boundary for visualization:', err);
+    }
 }
 
 function initWorker() {
@@ -211,8 +230,6 @@ async function processConsumerSearch(number) {
 
 
 async function processLocation(lat, lng) {
-    const isInsideTN = lat >= 8.0 && lat <= 14.0 && lng >= 75.0 && lng <= 81.0;
-
     // Transition UI
     document.getElementById('start-panel').classList.add('hidden');
     document.getElementById('fab-gps').classList.remove('hidden');
@@ -223,12 +240,6 @@ async function processLocation(lat, lng) {
     AppState.expandTimeout = setTimeout(() => {
         toggleMobilePanel(true);
     }, 2500);
-
-    if (!isInsideTN) {
-        UIRenderer.clearOverlays();
-        UIRenderer.renderError("📍 Outside Supported Area", "We currently only support TNEB jurisdictions within Tamil Nadu.");
-        return;
-    }
 
     // Capture location
     AppState.currentLocation = { lat, lng };
@@ -377,6 +388,12 @@ const UIRenderer = {
             boundary, office, section_name, subdivision_code, distributions,
             validation, coords, consumer_number 
         } = data;
+
+        if (match_type === 'outside_state') {
+            this.renderError("📍 Outside Tamil Nadu", "The selected location is outside the state boundary. Please select a location within Tamil Nadu.");
+            if (coords) updateMarker(coords.lat, coords.lng);
+            return;
+        }
 
         // 1. Render Polygons/Markers
         if (boundary?.geometry) {
