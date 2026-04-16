@@ -58,7 +58,7 @@ function scoreDistribution(name) {
 // Handle initialization with Persistent Caching
 async function init() {
     const CACHE_NAME = 'tneb-gis-v1';
-    const FILES = ['TNEB_Section_Boundary.json', 'tneb_section_office.json', 'unified_index.json'];
+    const FILES = ['/TNEB_Section_Boundary.json', '/tneb_section_office.json', '/unified_index.json'];
 
     try {
         console.log('Worker: Initializing data (Checking Cache)...');
