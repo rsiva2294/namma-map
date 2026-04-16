@@ -15,6 +15,7 @@ const AppState = {
     currentLocation: null,
     isSearching: false,
     searchTimeout: null,
+    expandTimeout: null,
     address: null
 };
 
@@ -55,6 +56,10 @@ function initMap() {
     AppState.map.on('click', (e) => {
         const { lat, lng } = e.latlng;
         processLocation(lat, lng);
+    });
+
+    AppState.map.on('popupopen', () => {
+        initIcons();
     });
 }
 
@@ -103,16 +108,78 @@ function initEventListeners() {
         }
     };
 
-    // Mobile Bottom Sheet Toggle
-    const dragHandle = document.getElementById('drag-handle');
-    const sidePanel = document.getElementById('side-panel');
-    if (dragHandle && sidePanel) {
-        dragHandle.onclick = () => {
-            if (window.innerWidth <= 640) {
-                sidePanel.classList.toggle('expanded');
+    // Mobile Bottom Sheet Gesture Logic
+    initDraggableSheet();
+}
+
+function initDraggableSheet() {
+    const handle = document.getElementById('drag-handle');
+    const panel = document.getElementById('side-panel');
+    const searchContainer = document.querySelector('.consumer-search-container');
+    if (!handle || !panel) return;
+
+    // Stop clicks/touches from passing through to the map
+    L.DomEvent.disableClickPropagation(panel);
+    if (searchContainer) L.DomEvent.disableClickPropagation(searchContainer);
+    L.DomEvent.disableScrollPropagation(panel);
+
+    let startY, startHeight;
+    let isDragging = false;
+
+    handle.addEventListener('touchstart', (e) => {
+        if (window.innerWidth > 640) return;
+        startY = e.touches[0].clientY;
+        startHeight = panel.offsetHeight;
+        isDragging = true;
+        panel.classList.add('no-transition');
+    }, { passive: true });
+
+    window.addEventListener('touchmove', (e) => {
+        if (!isDragging) return;
+        const currentY = e.touches[0].clientY;
+        const delta = startY - currentY;
+        const newHeight = startHeight + delta;
+        
+        // Boundaries: 120px to 85vh
+        const maxHeight = window.innerHeight * 0.85;
+        if (newHeight >= 120 && newHeight <= maxHeight) {
+            panel.style.height = `${newHeight}px`;
+        }
+    }, { passive: false });
+
+    window.addEventListener('touchend', () => {
+        if (!isDragging) return;
+        isDragging = false;
+        panel.classList.remove('no-transition');
+        
+        const currentHeight = panel.offsetHeight;
+        const delta = currentHeight - startHeight;
+        
+        // Threshold: 15% of screen height OR a fixed delta of 60px
+        const threshold = Math.min(window.innerHeight * 0.15, 60);
+        
+        panel.style.height = ''; 
+        
+        if (delta > threshold) {
+            panel.classList.add('expanded');
+        } else if (delta < -threshold) {
+            panel.classList.remove('expanded');
+        } else {
+            // Revert to original state if not enough drag
+            if (startHeight > window.innerHeight * 0.3) {
+                panel.classList.add('expanded');
+            } else {
+                panel.classList.remove('expanded');
             }
-        };
-    }
+        }
+    });
+
+    // Optional: Click to toggle still works
+    handle.addEventListener('click', () => {
+        if (window.innerWidth <= 640 && !isDragging) {
+            panel.classList.toggle('expanded');
+        }
+    });
 }
 
 function toggleMobilePanel(expand = true) {
@@ -130,7 +197,12 @@ async function processConsumerSearch(number) {
     document.getElementById('start-panel').classList.add('hidden');
     document.getElementById('fab-gps').classList.remove('hidden');
     document.getElementById('results-panel').classList.remove('hidden');
-    toggleMobilePanel(true);
+    
+    // Give breathing room to see selection on map
+    if (AppState.expandTimeout) clearTimeout(AppState.expandTimeout);
+    AppState.expandTimeout = setTimeout(() => {
+        toggleMobilePanel(true);
+    }, 3000);
 
     // Pass last known location for tie-breaking if available
     const lastLocation = AppState.currentLocation;
@@ -145,7 +217,12 @@ async function processLocation(lat, lng) {
     document.getElementById('start-panel').classList.add('hidden');
     document.getElementById('fab-gps').classList.remove('hidden');
     document.getElementById('results-panel').classList.remove('hidden');
-    toggleMobilePanel(true);
+    
+    // Give breathing room to see selection on map
+    if (AppState.expandTimeout) clearTimeout(AppState.expandTimeout);
+    AppState.expandTimeout = setTimeout(() => {
+        toggleMobilePanel(true);
+    }, 2500);
 
     if (!isInsideTN) {
         UIRenderer.clearOverlays();
@@ -323,8 +400,17 @@ const UIRenderer = {
                 html: '<div class="zap-icon-bg"><i data-lucide="zap"></i></div>',
                 iconSize: [32, 32], iconAnchor: [16, 32]
             });
+            const navUrl = `https://www.google.com/maps/dir/?api=1&destination=${office.coords[0]},${office.coords[1]}`;
             AppState.officeMarker = L.marker(office.coords, { icon: zapIcon }).addTo(AppState.map);
-            AppState.officeMarker.bindPopup(`<b>${office.name}</b><br>Section Office`);
+            AppState.officeMarker.bindPopup(`
+                <div style="text-align: center; padding: 5px;">
+                    <b style="font-size: 1rem; display: block; margin-bottom: 4px;">${office.name}</b>
+                    <span style="font-size: 0.8rem; color: #64748b; display: block; margin-bottom: 8px;">Section Office</span>
+                    <a href="${navUrl}" target="_blank" style="display: flex; align-items: center; justify-content: center; gap: 6px; background: #2563eb; color: white; text-decoration: none; padding: 6px 12px; border-radius: 8px; font-size: 0.85rem; font-weight: 600;">
+                        <i data-lucide="navigation" style="width: 14px; height: 14px;"></i> Directions
+                    </a>
+                </div>
+            `);
         }
 
         // 2. Build Badge info

@@ -9,7 +9,10 @@ A high-performance, privacy-first GIS application designed to help Tamil Nadu el
 - **GPS-Based Discovery**: Automatically find your Section Office and jurisdiction boundary based on your current location with smart fallbacks.
 - **Boundary Visualization**: View precise jurisdiction polygons on a high-performance Leaflet-driven interactive map.
 - **Privacy First**: All GIS indexing and matching happen locally in your browser. No consumer data or location information ever leaves your device.
-- **Premium UX**: A mobile-optimized glass-morphism interface with real-time feedback and detailed hierarchy information.
+- **Premium Mobile Experience**:
+  - **Draggable Bottom Sheet**: Native-feeling gesture controls to expand/collapse results.
+  - **Quick Navigation**: Instant Google Maps directions from both map popups and detail cards.
+  - **Optimized Layout**: Top-fixed search and high information density for small screens.
 
 ## 🛠️ How it Works
 

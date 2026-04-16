@@ -629,9 +629,10 @@ body {
         box-shadow: 0 -10px 40px rgba(0,0,0,0.1);
         padding-bottom: env(safe-area-inset-bottom);
         z-index: 1100;
-        transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: height 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         display: flex;
         flex-direction: column;
+        pointer-events: auto; /* Ensure events are active */
     }
 
     .side-panel.expanded {
@@ -639,14 +640,37 @@ body {
     }
 
     .drag-handle {
-        width: 40px;
-        height: 4px;
-        background: rgba(0,0,0,0.1);
-        border-radius: 2px;
-        margin: 12px auto;
-        display: block;
-        cursor: pointer;
+        width: 100%;
+        height: 30px; /* Larger hit area */
+        margin: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: grab;
         flex-shrink: 0;
+        touch-action: none;
+        background: transparent;
+    }
+
+    .drag-handle::after {
+        content: '';
+        width: 40px;
+        height: 6px;
+        background: rgba(0,0,0,0.15);
+        border-radius: 3px;
+    }
+
+    .drag-handle:active::after {
+        background: rgba(0,0,0,0.3);
+    }
+
+    .drag-handle:active {
+        cursor: grabbing;
+        background: rgba(0,0,0,0.25);
+    }
+
+    .side-panel.no-transition {
+        transition: none !important;
     }
 
     .consumer-search-container {
@@ -656,8 +680,23 @@ body {
         right: 10px;
         width: calc(100% - 20px);
         z-index: 1200;
-        background: var(--glass-bg) !important;
+        background: transparent; /* Remove outer background */
+        border: none;
+    }
+
+    .search-input-group {
+        background: rgba(255, 255, 255, 0.95);
         border: 1px solid var(--glass-border);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        padding: 8px 12px;
+    }
+
+    .search-input-group input {
+        font-size: 0.85rem; /* Smaller to fit hint text */
+    }
+
+    .search-input-group input::placeholder {
+        font-size: 0.8rem;
     }
 
     .logo h1 { font-size: 1.1rem; }
@@ -670,6 +709,7 @@ body {
     .results-container {
         padding: 12px;
         gap: 12px;
+        padding-bottom: 60px; /* Ensure directions button is visible */
     }
 
     .card {
@@ -721,7 +761,15 @@ body {
 
     #fab-gps {
         bottom: 140px; /* Above the collapsed panel */
-        left: 15px;
+        right: 20px;
+        width: 44px;
+        height: 44px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    #fab-gps i {
+        width: 20px;
+        height: 20px;
     }
     
     .status-toast {
