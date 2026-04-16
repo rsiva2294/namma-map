@@ -76,21 +76,25 @@ async function init() {
         const stateGeometry = stateData.features[0].geometry;
         self.statePolygons = stateGeometry.type === 'MultiPolygon' ? stateGeometry.coordinates : [stateGeometry.coordinates];
 
-        // Index boundaries with BBoxes
+        // Index boundaries with BBoxes (using pre-computed values if available)
         boundaries = boundaryData.features.map(f => {
             const geometry = f.geometry.type === 'Polygon' ? f.geometry.coordinates[0] : f.geometry.coordinates[0][0];
-            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-            
-            for (const [lng, lat] of geometry) {
-                if (lng < minX) minX = lng;
-                if (lng > maxX) maxX = lng;
-                if (lat < minY) minY = lat;
-                if (lat > maxY) maxY = lat;
+            let bbox = f.bbox;
+
+            if (!bbox) {
+                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                for (const [lng, lat] of geometry) {
+                    if (lng < minX) minX = lng;
+                    if (lng > maxX) maxX = lng;
+                    if (lat < minY) minY = lat;
+                    if (lat > maxY) maxY = lat;
+                }
+                bbox = [minX, minY, maxX, maxY];
             }
 
             return {
-                bbox: [minX, minY, maxX, maxY],
-                geometry: geometry,
+                bbox,
+                geometry,
                 properties: f.properties
             };
         });
