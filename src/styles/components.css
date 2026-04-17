@@ -557,9 +557,31 @@
 /* Mobile Adjustments */
 @media (max-width: 640px) {
   .card { padding: 16px; border-radius: 16px; }
-  .h-item { padding: 10px; }
-  .h-label { font-size: 0.6rem; }
-  .h-value { font-size: 0.8rem; }
+  
+  .start-card { padding: 20px; }
+  .start-card h2 { font-size: 1.2rem; margin-bottom: 4px; }
+  .start-card p { font-size: 0.8rem; margin-bottom: 16px; }
+  
+  .primary-btn, .secondary-btn { padding: 12px; font-size: 0.9rem; border-radius: 12px; }
+  .start-actions { gap: 8px; }
+  
+  .search-input-group { padding: 10px 16px; border-radius: 12px; }
+  .search-input-group input { font-size: 0.85rem; }
+  
+  .selection-summary { padding: 12px; gap: 12px; }
+  .selection-address { font-size: 0.9rem; }
+  
+  .h-item { padding: 10px; border-radius: 10px; }
+  .h-label { font-size: 0.55rem; }
+  .h-value { font-size: 0.75rem; }
+  
+  .divider { margin: 12px 0; font-size: 0.75rem; }
+  
+  .link-card { padding: 12px 8px; border-radius: 12px; }
+  .link-card span { font-size: 0.65rem; }
+  
+  #district-search { padding: 12px 16px; font-size: 0.9rem; }
+  
   #fab-gps { bottom: 140px; right: 20px; width: 44px; height: 44px; }
 }
 
