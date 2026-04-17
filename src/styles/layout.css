@@ -99,8 +99,13 @@
         transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), height 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
+    .side-panel.minimized {
+        height: 60px !important;
+        overflow: hidden;
+    }
+
     .side-panel.expanded {
-        height: 85vh;
+        height: 85vh !important;
     }
 
     .side-panel.showing-results {
@@ -108,7 +113,7 @@
     }
 
     .sticky-header-wrapper {
-        padding: 8px 16px 10px 16px;
+        padding: 8px 20px 10px 20px;
     }
 
     .showing-results .sticky-header-wrapper {
@@ -116,7 +121,7 @@
     }
 
     .scrollable-results {
-        padding: 4px 16px 100px 16px;
+        padding: 4px 20px 100px 20px;
     }
 
     .drag-handle {

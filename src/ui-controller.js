@@ -32,6 +32,26 @@ export const UIController = {
             };
             consumerBtn.onclick = doConsumerSearch;
             consumerInput.onkeypress = (e) => { if (e.key === 'Enter') doConsumerSearch(); };
+            
+            // Auto-expand on focus for mobile
+            consumerInput.onfocus = () => {
+                if (window.innerWidth <= 640) {
+                    const panel = document.getElementById(SELECTORS.SIDE_PANEL);
+                    panel.classList.add('expanded');
+                    panel.classList.remove('minimized');
+                }
+            };
+        }
+
+        const localityInput = document.getElementById(SELECTORS.LOCALITY_SEARCH);
+        if (localityInput) {
+            localityInput.onfocus = () => {
+                if (window.innerWidth <= 640) {
+                    const panel = document.getElementById(SELECTORS.SIDE_PANEL);
+                    panel.classList.add('expanded');
+                    panel.classList.remove('minimized');
+                }
+            };
         }
 
         this.initTabs();
@@ -125,12 +145,25 @@ export const UIController = {
             
             panel.style.height = ''; 
             
-            if (delta > threshold) panel.classList.add('expanded');
-            else if (delta < -threshold) panel.classList.remove('expanded');
-            else {
-                // If snap is neutral, check absolute height
-                if (currentHeight > window.innerHeight * 0.4) panel.classList.add('expanded');
+            if (delta > threshold) {
+                 panel.classList.add('expanded');
+                 panel.classList.remove('minimized');
+            } else if (delta < -threshold) {
+                if (currentHeight < 150) panel.classList.add('minimized');
                 else panel.classList.remove('expanded');
+            } else {
+                // Positional snapping
+                const h = currentHeight;
+                const wh = window.innerHeight;
+                if (h < 120) {
+                    panel.classList.add('minimized');
+                    panel.classList.remove('expanded');
+                } else if (h > wh * 0.5) {
+                    panel.classList.add('expanded');
+                    panel.classList.remove('minimized');
+                } else {
+                    panel.classList.remove('expanded', 'minimized');
+                }
             }
         });
         

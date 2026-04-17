@@ -124,7 +124,7 @@
 }
 
 .tabs-content {
-  padding: 16px;
+  padding: 16px 20px;
 }
 
 .tab-panel {
@@ -752,19 +752,21 @@
   .primary-btn, .secondary-btn { padding: 12px; font-size: 0.9rem; border-radius: 12px; }
   .start-actions { gap: 8px; }
   
-  .search-input-group { padding: 10px 16px; border-radius: 12px; }
-  .search-input-group input { font-size: 0.85rem; }
+  .search-input-group { padding: 9px 16px; border-radius: 12px; }
+  .search-input-group input { font-size: 0.8rem; }
   
-  .selection-summary { padding: 12px; gap: 12px; }
-  .selection-address { font-size: 0.85rem; }
-  .selection-coords { font-size: 0.65rem; }
+  .selection-summary { padding: 12px 20px; gap: 12px; }
+  .selection-address { font-size: 0.75rem; line-height: 1.3; }
+  .selection-coords { font-size: 0.6rem; margin-top: 2px; }
   
-  .hierarchy-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-  .h-value { font-size: 0.8rem; }
-  .h-label { font-size: 0.55rem; }
+  .hierarchy-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .h-value { font-size: 0.72rem; }
+  .h-label { font-size: 0.48rem; letter-spacing: 0.03em; }
   
-  .office-card .card-content { flex-direction: column; align-items: stretch; gap: 12px; }
-  .office-card .nav-btn { width: 100% !important; margin-top: 4px !important; }
+  .office-card .card-content { flex-direction: column; align-items: stretch; gap: 10px; padding: 12px 16px; }
+  .office-card h4 { font-size: 0.8rem; }
+  .office-card p { font-size: 0.7rem; }
+  .office-card .nav-btn { width: 100% !important; margin-top: 4px !important; font-size: 0.8rem; padding: 10px; }
 
   /* Hide Services and FAB globally on mobile results for maximum clarity */
   body.showing-results .quick-links { display: none !important; }

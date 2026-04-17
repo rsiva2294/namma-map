@@ -29,7 +29,7 @@ async function init() {
         (data) => {
             // 1. Render UI Components
             UIController.renderResults(data, {
-                onReset: resetApp,
+                onReset: () => resetApp(false), // Back button doesn't zoom
                 formatHItem: (l, v) => `<div class="h-item"><span class="h-label">${l}</span><span class="h-value">${v}</span></div>`
             });
 
@@ -150,10 +150,8 @@ function processLocation(lat, lng, zoom = false) {
     document.getElementById(SELECTORS.SIDE_PANEL).classList.remove('hidden');
     document.getElementById(SELECTORS.RESULTS_PANEL).classList.remove('hidden');
 
-    if (AppState.expandTimeout) clearTimeout(AppState.expandTimeout);
-    AppState.expandTimeout = setTimeout(() => {
-        UIController.toggleMobileSheet(true);
-    }, 1800);
+    document.getElementById(SELECTORS.SIDE_PANEL).classList.remove('hidden');
+    document.getElementById(SELECTORS.RESULTS_PANEL).classList.remove('hidden');
 
     updateState({ currentLocation: { lat, lng } });
     updateMarker(lat, lng, (nLat, nLng) => processLocation(nLat, nLng, false));
@@ -172,15 +170,10 @@ function processConsumerSearch(number) {
         ql.classList.add('compact-view');
     }
 
-    if (AppState.expandTimeout) clearTimeout(AppState.expandTimeout);
-    AppState.expandTimeout = setTimeout(() => {
-        UIController.toggleMobileSheet(true);
-    }, 3000);
-
     requestConsumerSearch(number, AppState.currentLocation);
 }
 
-function resetApp() {
+function resetApp(zoom = true) {
     clearOverlays();
     if (AppState.marker) {
         AppState.map.removeLayer(AppState.marker);
@@ -212,7 +205,11 @@ function resetApp() {
     document.body.classList.remove('showing-results');
     
     const panel = document.getElementById(SELECTORS.SIDE_PANEL);
-    if (panel) panel.classList.remove('showing-results');
+    if (panel) {
+        panel.classList.remove('showing-results');
+        panel.classList.remove('expanded');
+        panel.classList.remove('minimized');
+    }
     
     const ql = document.getElementById('quick-links-panel');
     if (ql) {
@@ -220,7 +217,9 @@ function resetApp() {
         ql.classList.add('init-view');
     }
 
-    AppState.map.flyTo(MAP_CONFIG.INITIAL_VIEW, MAP_CONFIG.INITIAL_ZOOM);
+    if (zoom) {
+        AppState.map.flyTo(MAP_CONFIG.INITIAL_VIEW, MAP_CONFIG.INITIAL_ZOOM);
+    }
 }
 
 // Global exposure for legacy onclick handlers if any remain in HTML (ideally bind all)
