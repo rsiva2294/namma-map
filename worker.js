@@ -103,6 +103,8 @@ function buildKey(region, section) {
     return `${String(region || "").padStart(2, '0')}_${String(section || "").padStart(3, '0')}`;
 }
 
+import { feature } from 'topojson-client';
+
 // Handle initialization with Persistent Caching & IndexedDB
 async function init() {
     const CACHE_NAME = 'tneb-gis-v1';
@@ -117,7 +119,7 @@ async function init() {
     }
 
     try {
-        console.log('Worker: Initializing datasets...');
+        console.log('Worker: Initializing datasets (TopoJSON mode)...');
         
         const cache = await caches.open(CACHE_NAME);
         const dataPromises = FILES.map(async (file) => {
@@ -131,10 +133,16 @@ async function init() {
         });
 
         const results = await Promise.all(dataPromises);
-        const boundaryData = results[0];
+        let boundaryData = results[0];
         const officeData = results[1];
         const stateData = results[2];
         const indexData = indexNeedsPopulating ? results[3] : null;
+
+        // Decode Sections (TopoJSON -> GeoJSON)
+        if (boundaryData.type === 'Topology') {
+            console.log('Worker: Decoding Section TopoJSON...');
+            boundaryData = feature(boundaryData, boundaryData.objects.TNEB_Section_Boundary);
+        }
 
         // Populate Index if first load
         if (indexNeedsPopulating && indexData) {

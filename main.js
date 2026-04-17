@@ -1,5 +1,6 @@
 import L from 'leaflet';
 import { createIcons, Zap, Locate, Search, MapPin, Navigation, Info, Map, AlertTriangle, RefreshCw, ArrowLeft, Phone, ExternalLink, X } from 'lucide';
+import { feature } from 'topojson-client';
 
 /**
  * TNEB Jurisdiction Finder v2.0
@@ -175,15 +176,22 @@ async function selectDistrict(district) {
     try {
         if (!AppState.districtGeoJSON) {
             const response = await fetch('/Districts_boundary.json');
-            AppState.districtGeoJSON = await response.json();
+            let data = await response.json();
+            
+            // Decode TopoJSON if needed
+            if (data.type === 'Topology') {
+                AppState.districtGeoJSON = feature(data, data.objects.Districts_boundary);
+            } else {
+                AppState.districtGeoJSON = data;
+            }
         }
 
-        const feature = AppState.districtGeoJSON.features.find(f => 
+        const featureData = AppState.districtGeoJSON.features.find(f => 
             f.properties.district_n === district.name
         );
 
-        if (feature) {
-            AppState.districtLayer = L.geoJSON(feature, {
+        if (featureData) {
+            AppState.districtLayer = L.geoJSON(featureData, {
                 style: {
                     color: '#2563eb',
                     weight: 3,
