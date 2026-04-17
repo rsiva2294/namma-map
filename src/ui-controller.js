@@ -90,49 +90,12 @@ export const UIController = {
         if (searchCard) L.DomEvent.disableClickPropagation(searchCard);
         L.DomEvent.disableScrollPropagation(panel);
         
+        // Draggable sheet logic disabled in favor of new Floating Card layout
+        /*
         let startY, startHeight;
-        let isDragging = false;
-
-        handle.addEventListener('touchstart', (e) => {
-            if (window.innerWidth > 640) return;
-            startY = e.touches[0].clientY;
-            startHeight = panel.offsetHeight;
-            isDragging = true;
-            panel.classList.add('no-transition');
-        }, { passive: true });
-
-        window.addEventListener('touchmove', (e) => {
-            if (!isDragging) return;
-            const currentY = e.touches[0].clientY;
-            const delta = startY - currentY;
-            const newHeight = startHeight + delta;
-            
-            const maxHeight = window.innerHeight * 0.85;
-            const minHeight = window.innerHeight * 0.15; 
-            if (newHeight >= minHeight && newHeight <= maxHeight) {
-                panel.style.height = `${newHeight}px`;
-            }
-        }, { passive: false });
-
-        window.addEventListener('touchend', () => {
-            if (!isDragging) return;
-            isDragging = false;
-            panel.classList.remove('no-transition');
-            
-            const currentHeight = panel.offsetHeight;
-            const delta = currentHeight - startHeight;
-            const threshold = 30; // More responsive threshold
-            
-            panel.style.height = ''; 
-            
-            if (delta > threshold) panel.classList.add('expanded');
-            else if (delta < -threshold) panel.classList.remove('expanded');
-            else {
-                // If snap is neutral, check absolute height
-                if (currentHeight > window.innerHeight * 0.4) panel.classList.add('expanded');
-                else panel.classList.remove('expanded');
-            }
+...
         });
+        */
         
 
         handle.addEventListener('click', () => {

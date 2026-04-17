@@ -793,6 +793,9 @@
   .quick-links.init-view .service-link i { width: 22px; height: 22px; }
 
   #fab-gps { bottom: 140px; right: 20px; width: 44px; height: 44px; }
+
+  /* Hide drag handle for floating card layout */
+  .drag-handle { display: none !important; }
 }
 
 /* Loader Specifics */
