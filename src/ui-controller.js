@@ -14,36 +14,55 @@ export const UIController = {
     },
 
     bindEvents({ 
-        onGPS, onExplore, onConsumerSearch, onPlaceSelect, onPlaceSearch, onReset 
+        onGPS, onConsumerSearch, onPlaceSelect, onPlaceSearch, onReset 
     }) {
-        document.getElementById(SELECTORS.MAIN_GPS_BTN).onclick = onGPS;
-        document.getElementById(SELECTORS.FAB_GPS).onclick = onGPS;
+        const mainGps = document.getElementById(SELECTORS.MAIN_GPS_BTN);
+        const fabGps = document.getElementById(SELECTORS.FAB_GPS);
         
-        document.getElementById(SELECTORS.EXPLORE_BTN).onclick = () => {
-            this.togglePanel(SELECTORS.START_PANEL, false);
-            this.togglePanel(SELECTORS.FAB_GPS, true);
-            if (window.innerWidth <= 640) {
-                this.togglePanel(SELECTORS.SIDE_PANEL, false);
-                this.toggleMobileSheet(false);
-            }
-            onExplore?.();
-        };
-
+        if (mainGps) mainGps.onclick = onGPS;
+        if (fabGps) fabGps.onclick = onGPS;
+        
         const consumerBtn = document.getElementById(SELECTORS.CONSUMER_SEARCH_BTN);
         const consumerInput = document.getElementById(SELECTORS.CONSUMER_NUMBER);
         
-        const doConsumerSearch = () => {
-            const num = consumerInput.value.trim();
-            if (num) onConsumerSearch(num);
-        };
+        if (consumerBtn && consumerInput) {
+            const doConsumerSearch = () => {
+                const num = consumerInput.value.trim();
+                if (num) onConsumerSearch(num);
+            };
+            consumerBtn.onclick = doConsumerSearch;
+            consumerInput.onkeypress = (e) => { if (e.key === 'Enter') doConsumerSearch(); };
+        }
 
-        consumerBtn.onclick = doConsumerSearch;
-        consumerInput.onkeypress = (e) => { if (e.key === 'Enter') doConsumerSearch(); };
-
+        this.initTabs();
         this.initDraggableSheet();
-
-        // Unified Place Search (PIN, Locality, District)
         this.setupPlaceSearch(onPlaceSearch, onPlaceSelect);
+    },
+
+    initTabs() {
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const panels = document.querySelectorAll('.tab-panel');
+
+        tabBtns.forEach(btn => {
+            btn.onclick = () => {
+                const targetId = btn.dataset.tab;
+                
+                // Toggle Buttons
+                tabBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                // Toggle Panels
+                panels.forEach(p => p.classList.remove('active'));
+                document.getElementById(targetId)?.classList.add('active');
+
+                // If switching to consumer tab, focus input
+                if (targetId === 'consumer-tab') {
+                    document.getElementById(SELECTORS.CONSUMER_NUMBER)?.focus();
+                } else {
+                    document.getElementById(SELECTORS.LOCALITY_SEARCH)?.focus();
+                }
+            };
+        });
     },
 
     togglePanel(id, show) {
@@ -64,15 +83,15 @@ export const UIController = {
     initDraggableSheet() {
         const handle = document.getElementById(SELECTORS.DRAG_HANDLE);
         const panel = document.getElementById(SELECTORS.SIDE_PANEL);
-        const searchContainer = document.querySelector('.consumer-search-container');
+        const searchCard = document.getElementById(SELECTORS.SEARCH_CARD);
         if (!handle || !panel) return;
 
         L.DomEvent.disableClickPropagation(panel);
-        if (searchContainer) L.DomEvent.disableClickPropagation(searchContainer);
+        if (searchCard) L.DomEvent.disableClickPropagation(searchCard);
         L.DomEvent.disableScrollPropagation(panel);
         
         if (window.innerWidth <= 640 && !AppState.isSearching) {
-            panel.style.height = '42vh';
+            panel.style.height = '35vh'; // Slightly lower default for the compact tabs
         }
 
         let startY, startHeight;
@@ -126,7 +145,7 @@ export const UIController = {
     },
 
     setupPlaceSearch(onSearch, onSelect) {
-        const input = document.getElementById(SELECTORS.PLACE_SEARCH);
+        const input = document.getElementById(SELECTORS.LOCALITY_SEARCH);
         const results = document.getElementById(SELECTORS.PLACE_RESULTS);
 
         if (!input || !results) return;
@@ -165,7 +184,7 @@ export const UIController = {
                     </div>
                 `;
                 div.onclick = () => {
-                    document.getElementById(SELECTORS.PLACE_SEARCH).value = p.name;
+                    document.getElementById(SELECTORS.LOCALITY_SEARCH).value = p.name;
                     results.classList.add('hidden');
                     onSelect(p);
                 };
@@ -311,14 +330,16 @@ export const UIController = {
                         <i data-lucide="navigation" class="icon-primary"></i>
                         <h3>Section Office</h3>
                     </div>
-                    <div class="office-info">
-                        <div class="office-name">${office.name}</div>
-                        <div class="office-confidence">
-                            <i data-lucide="info"></i>
-                            <span>Confidence: ${data.confidence.toUpperCase()} (${office.distance} km)</span>
+                    <div class="card-content">
+                        <div class="office-info">
+                            <div class="office-name">${office.name}</div>
+                            <div class="office-confidence">
+                                <i data-lucide="info"></i>
+                                <span>${data.confidence.toUpperCase()} (${office.distance} km)</span>
+                            </div>
                         </div>
-                        <a href="${navUrl}" target="_blank" class="nav-btn">
-                            <i data-lucide="navigation"></i> Directions
+                        <a href="${navUrl}" target="_blank" class="nav-btn" style="width: auto; padding: 10px 16px; margin: 0;">
+                            <i data-lucide="navigation"></i> Locate
                         </a>
                     </div>
                 </div>

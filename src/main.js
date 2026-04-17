@@ -137,11 +137,16 @@ function processLocation(lat, lng, zoom = false) {
         AppState.map.flyTo([lat, lng], 14, { animate: true });
     }
 
-    UIController.togglePanel(SELECTORS.START_PANEL, false);
+    UIController.togglePanel(SELECTORS.SEARCH_CARD, false);
     UIController.togglePanel(SELECTORS.FAB_GPS, true);
-    UIController.togglePanel(SELECTORS.RESULTS_PANEL, false);
-    
-    // Ensure panels are ready
+    UIController.togglePanel(SELECTORS.RESULTS_PANEL, true);
+
+    const ql = document.getElementById('quick-links-panel');
+    if (ql) {
+        ql.classList.remove('init-view');
+        ql.classList.add('compact-view');
+    }
+
     document.getElementById(SELECTORS.SIDE_PANEL).classList.remove('hidden');
     document.getElementById(SELECTORS.RESULTS_PANEL).classList.remove('hidden');
 
@@ -157,16 +162,14 @@ function processLocation(lat, lng, zoom = false) {
 }
 
 function processConsumerSearch(number) {
-    UIController.togglePanel(SELECTORS.START_PANEL, false);
+    UIController.togglePanel(SELECTORS.SEARCH_CARD, false);
     UIController.togglePanel(SELECTORS.FAB_GPS, true);
-    UIController.togglePanel(SELECTORS.SIDE_PANEL, false);
-    UIController.togglePanel(SELECTORS.RESULTS_PANEL, false);
+    UIController.togglePanel(SELECTORS.RESULTS_PANEL, true);
 
-    document.getElementById(SELECTORS.SIDE_PANEL).classList.remove('hidden');
-    document.getElementById(SELECTORS.RESULTS_PANEL).classList.remove('hidden');
-
-    if (window.innerWidth <= 640) {
-        document.querySelector('.consumer-search-container')?.classList.add('hidden');
+    const ql = document.getElementById('quick-links-panel');
+    if (ql) {
+        ql.classList.remove('init-view');
+        ql.classList.add('compact-view');
     }
 
     if (AppState.expandTimeout) clearTimeout(AppState.expandTimeout);
@@ -191,16 +194,26 @@ function resetApp() {
     updateState({ currentLocation: null, address: null });
 
     const consumerInput = document.getElementById(SELECTORS.CONSUMER_NUMBER);
-    const districtInput = document.getElementById(SELECTORS.DISTRICT_SEARCH);
+    const localityInput = document.getElementById(SELECTORS.LOCALITY_SEARCH);
     if (consumerInput) consumerInput.value = '';
-    if (districtInput) districtInput.value = '';
+    if (localityInput) localityInput.value = '';
 
-    UIController.togglePanel(SELECTORS.START_PANEL, true);
+    UIController.togglePanel(SELECTORS.SEARCH_CARD, true);
     UIController.togglePanel(SELECTORS.RESULTS_PANEL, false);
     UIController.togglePanel(SELECTORS.FAB_GPS, false);
     
     document.getElementById(SELECTORS.SIDE_PANEL).classList.remove('hidden');
-    document.querySelector('.consumer-search-container')?.classList.remove('hidden');
+
+    // Reset to Locality Tab by default
+    const localityTabBtn = document.querySelector('[data-tab="locality-tab"]');
+    if (localityTabBtn) localityTabBtn.click();
+
+    // Reset Quick Links to Initial View
+    const ql = document.getElementById('quick-links-panel');
+    if (ql) {
+        ql.classList.remove('compact-view');
+        ql.classList.add('init-view');
+    }
 
     AppState.map.flyTo(MAP_CONFIG.INITIAL_VIEW, MAP_CONFIG.INITIAL_ZOOM);
 }

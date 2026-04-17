@@ -21,14 +21,13 @@ export const DATA_URLS = {
 export const SELECTORS = {
     MAP: 'map',
     LOADING_OVERLAY: 'loading-overlay',
-    PLACE_SEARCH: 'place-search',
+    LOCALITY_SEARCH: 'locality-search',
     PLACE_RESULTS: 'place-results',
     CONSUMER_NUMBER: 'consumer-number',
     CONSUMER_SEARCH_BTN: 'consumer-search-btn',
     MAIN_GPS_BTN: 'main-gps-btn',
     FAB_GPS: 'fab-gps',
-    EXPLORE_BTN: 'explore-btn',
-    START_PANEL: 'start-panel',
+    SEARCH_CARD: 'search-card',
     RESULTS_PANEL: 'results-panel',
     SIDE_PANEL: 'side-panel',
     DRAG_HANDLE: 'drag-handle',
@@ -36,6 +35,5 @@ export const SELECTORS = {
     RESULTS_CONTENT: 'results-content',
     SEARCH_SUGGESTIONS: 'search-suggestions',
     STATUS_TOAST: 'status-toast',
-    STATUS_TEXT: 'status-text',
-    LOCALITY_SEARCH: 'locality-search'
+    STATUS_TEXT: 'status-text'
 };

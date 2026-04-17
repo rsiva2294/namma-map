@@ -45,75 +45,71 @@
         <aside class="side-panel" id="side-panel">
             <div class="drag-handle" id="drag-handle"></div>
 
-            <!-- Consumer Number Search -->
-            <div class="consumer-search-container glass-panel">
-                <div class="search-input-group">
-                    <i data-lucide="zap" class="icon-primary"></i>
-                    <input type="text" id="consumer-number" placeholder="Enter your consumer number" autocomplete="off">
-                    <button id="consumer-search-btn" class="search-action-btn" title="Search by Consumer Number">
-                        <i data-lucide="search"></i>
+            <!-- Unified Search Card -->
+            <div id="search-card" class="glass-panel search-card">
+                <div class="tabs-header">
+                    <button class="tab-btn active" data-tab="locality-tab">
+                        <i data-lucide="map-pin"></i>
+                        <span>Locality</span>
+                    </button>
+                    <button class="tab-btn" data-tab="consumer-tab">
+                        <i data-lucide="zap"></i>
+                        <span>Consumer ID</span>
                     </button>
                 </div>
-                <div class="search-help">
-                    <span>Example: <b>04</b>-XXX-XXX-XXXX (Chennai South)</span>
-                    <div class="help-popover" id="consumer-help-popover">
-                        <p>First 2 digits are the Region Code:</p>
-                        <ul>
-                            <li><b>03:</b> Chennai North</li>
-                            <li><b>04:</b> Chennai South</li>
-                            <li><b>05:</b> Coimbatore</li>
-                            <li><b>09:</b> Madurai</li>
-                        </ul>
+
+                <div class="tabs-content">
+                    <!-- Locality Tab -->
+                    <div id="locality-tab" class="tab-panel active">
+                        <div class="search-input-group">
+                            <input type="text" id="locality-search" placeholder="Search PIN, Locality or District..." autocomplete="off">
+                            <button id="main-gps-btn" class="inline-gps-btn" title="Use My Location">
+                                <i data-lucide="locate"></i>
+                            </button>
+                        </div>
+                        <div id="place-results" class="combo-results hidden"></div>
+                    </div>
+
+                    <!-- Consumer ID Tab -->
+                    <div id="consumer-tab" class="tab-panel">
+                        <div class="search-input-group">
+                            <input type="text" id="consumer-number" placeholder="Enter your consumer number" autocomplete="off">
+                            <button id="consumer-search-btn" class="search-action-btn" title="Search by Consumer Number">
+                                <i data-lucide="search"></i>
+                            </button>
+                        </div>
+                        <div class="search-help">
+                            <span>Example: <b>04</b>-XXX-XXX-XXXX (Chennai South)</span>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Start Card (Choice Screen) -->
+            <!-- Results Panel (Priority Position) -->
+            <div id="results-panel" class="results-container hidden panel-transition">
+                <!-- Sticky Header Container -->
+                <div id="results-sticky-header" class="sticky-header-wrapper"></div>
+                <!-- Scrollable Content -->
+                <div id="results-content" class="scrollable-results"></div>
+            </div>
 
-            <div id="start-panel" class="glass-panel start-card">
-                <h2>Find Your Jurisdiction</h2>
-                <p>Select how you want to find your electricity section</p>
-                
-                <div class="start-actions">
-                    <button id="main-gps-btn" class="primary-btn">
-                        <i data-lucide="locate"></i>
-                        <span>Use My Location</span>
-                    </button>
-                    <button id="explore-btn" class="secondary-btn">
-                        <i data-lucide="map"></i>
-                        <span>Explore on Map</span>
-                    </button>
-                </div>
-
-                <div class="divider">
-                    <span>OR</span>
-                </div>
-
-                <div class="place-search-group">
-                    <label for="place-search"><i data-lucide="map-pin"></i> Search PIN, Locality or District</label>
-                    <div class="place-combo-box">
-                        <input type="text" id="place-search" placeholder="Enter PIN, Locality or District..." autocomplete="off">
-                        <div id="place-results" class="combo-results hidden"></div>
-                    </div>
-                </div>
-
-            <!-- Quick Links & Contact -->
-            <div class="panel-section quick-links">
-                <h3>Public Services</h3>
-                <div class="link-grid">
-                    <a href="https://www.tnebnet.org/qwp/qpay" target="_blank" class="link-card">
+            <!-- Quick Links (Dynamic Modes) -->
+            <div id="quick-links-panel" class="panel-section quick-links init-view">
+                <h3>Quick Services</h3>
+                <div class="link-wrapper">
+                    <a href="https://www.tnebnet.org/qwp/qpay" target="_blank" class="service-link" title="Quick Pay">
                         <i data-lucide="zap"></i>
                         <span>Quick Pay</span>
                     </a>
-                    <a href="https://www.tnebltd.gov.in/outages/viewshutdown.xhtml" target="_blank" class="link-card">
+                    <a href="https://www.tnebltd.gov.in/outages/viewshutdown.xhtml" target="_blank" class="service-link" title="Outage Info">
                         <i data-lucide="external-link"></i>
-                        <span>Outage Info</span>
+                        <span>Outages</span>
                     </a>
-                    <a href="tel:9498794987" class="link-card">
+                    <a href="tel:9498794987" class="service-link" title="Helpline">
                         <i data-lucide="phone"></i>
                         <span>Helpline</span>
                     </a>
-                    <a href="https://x.com/TANGEDCO_Offcl" target="_blank" class="link-card">
+                    <a href="https://x.com/TANGEDCO_Offcl" target="_blank" class="service-link" title="Social Hub">
                         <i data-lucide="x"></i>
                         <span>Social Hub</span>
                     </a>
@@ -122,17 +118,8 @@
 
             <!-- Disclaimer Footer -->
             <footer class="side-panel-footer">
-                <p><strong>Disclaimer:</strong> This website is an independent individual effort for public utility. We are <strong>not</strong> officially affiliated with TNEB / TANGEDCO or any government entity.</p>
+                <p><strong>Disclaimer:</strong> This website is an independent individual effort for public utility. Not officially affiliated with TANGEDCO.</p>
             </footer>
-            </div>
-
-            <div id="results-panel" class="results-container hidden panel-transition">
-                <!-- Sticky Header Container -->
-                <div id="results-sticky-header" class="sticky-header-wrapper"></div>
-                
-                <!-- Scrollable Content -->
-                <div id="results-content" class="scrollable-results"></div>
-            </div>
         </aside>
 
         <!-- Loading Overlay -->
