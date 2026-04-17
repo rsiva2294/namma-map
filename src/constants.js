@@ -7,7 +7,7 @@ export const MAP_CONFIG = {
     INITIAL_ZOOM: 7,
     MIN_ZOOM: 6,
     MAX_ZOOM: 20,
-    BOUNDS: [[8.0, 75.0], [14.0, 81.0]],
+    BOUNDS: [[8.0, 76.0], [14.0, 80.5]], // Tighter TN Bounds
     TILE_LAYER: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
     TILE_ATTRIBUTION: '&copy; OS contributors &copy; CARTO'
 };

@@ -1,7 +1,3 @@
-/**
- * Spatial Utilities & Algorithms
- */
-
 // Ray-casting algorithm for Point-in-Polygon check
 export function isPointInPolygon(point, vs) {
     const x = point[0], y = point[1];

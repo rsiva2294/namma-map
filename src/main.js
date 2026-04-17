@@ -3,7 +3,7 @@
  */
 import { AppState, updateState } from './state';
 import { SELECTORS, MAP_CONFIG, DATA_URLS } from './constants';
-import { initMap, updateMarker, clearOverlays, drawBoundary, addOfficeMarker, drawDistrictLayer, flashBoundary } from './map-engine';
+import { initMap, updateMarker, clearOverlays, drawBoundary, addOfficeMarker, drawDistrictLayer, flashBoundary, isInsideTamilNadu } from './map-engine';
 import { UIController } from './ui-controller';
 import { initWorker, requestProcess, requestConsumerSearch, requestPlaceSearch } from './worker-client';
 import { feature } from 'topojson-client';
@@ -87,6 +87,12 @@ async function initDistrictBoundaries() {
 async function handlePlaceSelect(place) {
     if (!place || !place.center) return;
     
+    // Boundary Guard
+    if (!isInsideTamilNadu(place.center[0], place.center[1])) {
+        UIController.renderError("📍 Location Not Supported", "The selected location is outside Tamil Nadu.");
+        return;
+    }
+
     // 1. Zoom to the place
     AppState.map.flyTo(place.center, 15, { animate: true, duration: 2 });
     
@@ -97,7 +103,7 @@ async function handlePlaceSelect(place) {
 
     // 3. Trigger resolution
     setTimeout(() => {
-        processLocation(place.center[0], place.center[1]);
+        processLocation(place.center[0], place.center[1], false); // Zoom already happened
     }, 1500);
 }
 
@@ -113,8 +119,7 @@ function triggerGPS() {
         navigator.geolocation.getCurrentPosition((pos) => {
             UIController.setGPSLoading(false);
             const { latitude, longitude } = pos.coords;
-            AppState.map.flyTo([latitude, longitude], 14);
-            processLocation(latitude, longitude);
+            processLocation(latitude, longitude, true); // Zoom on GPS lock
         }, (err) => {
             UIController.setGPSLoading(false);
             UIController.renderError("📍 GPS Error", "Could not detect location.");
@@ -122,28 +127,31 @@ function triggerGPS() {
     }
 }
 
-function processLocation(lat, lng) {
+function processLocation(lat, lng, zoom = false) {
+    if (!isInsideTamilNadu(lat, lng)) {
+        UIController.renderError("📍 Location Not Supported", "This application only supports jurisdictions within Tamil Nadu.");
+        return;
+    }
+
+    if (zoom) {
+        AppState.map.flyTo([lat, lng], 14, { animate: true });
+    }
+
     UIController.togglePanel(SELECTORS.START_PANEL, false);
     UIController.togglePanel(SELECTORS.FAB_GPS, true);
-    UIController.togglePanel(SELECTORS.SIDE_PANEL, false); // Toggle for mobility
     UIController.togglePanel(SELECTORS.RESULTS_PANEL, false);
     
-    // Ensure side-panel is visible
+    // Ensure panels are ready
     document.getElementById(SELECTORS.SIDE_PANEL).classList.remove('hidden');
     document.getElementById(SELECTORS.RESULTS_PANEL).classList.remove('hidden');
-
-    // Mobile: Hide search hint
-    if (window.innerWidth <= 640) {
-        document.querySelector('.consumer-search-container')?.classList.add('hidden');
-    }
 
     if (AppState.expandTimeout) clearTimeout(AppState.expandTimeout);
     AppState.expandTimeout = setTimeout(() => {
         UIController.toggleMobileSheet(true);
-    }, 2500);
+    }, 1800);
 
     updateState({ currentLocation: { lat, lng } });
-    updateMarker(lat, lng, (nLat, nLng) => processLocation(nLat, nLng));
+    updateMarker(lat, lng, (nLat, nLng) => processLocation(nLat, nLng, false));
     
     requestProcess(lat, lng);
 }

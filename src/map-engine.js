@@ -4,6 +4,7 @@
 import L from 'leaflet';
 import { AppState } from './state';
 import { MAP_CONFIG, DATA_URLS, SELECTORS } from './constants';
+import { isPointInGeoJSON } from './utils/geo';
 
 export function initMap(onMapClick, onPopupOpen) {
     AppState.map = L.map(SELECTORS.MAP, {
@@ -12,6 +13,8 @@ export function initMap(onMapClick, onPopupOpen) {
         maxBoundsViscosity: 1.0,
         minZoom: MAP_CONFIG.MIN_ZOOM
     }).setView(MAP_CONFIG.INITIAL_VIEW, MAP_CONFIG.INITIAL_ZOOM);
+
+    AppState.map.setMaxBounds(MAP_CONFIG.BOUNDS);
 
     L.tileLayer(MAP_CONFIG.TILE_LAYER, {
         attribution: MAP_CONFIG.TILE_ATTRIBUTION,
@@ -37,6 +40,7 @@ async function initStateBoundary() {
     try {
         const response = await fetch(DATA_URLS.STATE_BOUNDARY);
         const data = await response.json();
+        AppState.stateBoundaryGeoJSON = data;
         
         L.geoJSON(data, {
             style: {
@@ -146,4 +150,12 @@ export function flashBoundary(geometry) {
             }
         }, 40);
     }, 1200);
+}
+
+/**
+ * Check if a coordinate is within Tamil Nadu
+ */
+export function isInsideTamilNadu(lat, lng) {
+    if (!AppState.stateBoundaryGeoJSON) return true; // Fail-safe (allow until loaded)
+    return isPointInGeoJSON([lng, lat], AppState.stateBoundaryGeoJSON); // LatLng -> LngLat
 }
