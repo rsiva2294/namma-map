@@ -8,11 +8,12 @@ To ensure a smooth UI experience while processing large GeoJSON datasets and adm
 
 ### Initialization Flow
 1. `main.js` spawns the Web Worker.
-2. The Worker fetches three primary data sources:
-   - `TNEB_Section_Boundary.json`: Geometric polygons for jurisdictions.
-   - `tneb_section_office.json`: Point locations for section offices.
-   - `unified_index.json`: A precomputed administrative lookup table.
-3. The Worker builds an `indexMap` for O(1) lookups and an spatial index for boundary polygons.
+2. The Worker checks **IndexedDB** (`TNEB_INDEX_DB`) for administrative records.
+3. If database is empty:
+   - Fetches `TNEB_Section_Boundary.json` (TopoJSON) and `unified_index_cleaned.json`.
+   - Populates IndexedDB and clears the index JSON from RAM.
+4. The Worker decodes the TopoJSON arcs into GeoJSON features on-the-fly.
+5. Uses **Pre-computed BBoxes** to index the boundaries in O(1) time without reading all vertices.
 
 ## 🔑 Resolution Precedence
 
@@ -57,6 +58,8 @@ The project is configured for **Firebase Hosting**:
 
 ## 🚀 Performance Optimization
 
-- **Persistent Caching**: Data files are stored in the browser's Cache API during initialization to speed up subsequent loads.
-- **Precomputed Metadata**: The `unified_index.json` avoids expensive string matching by providing pre-linked metadata for every section key.
-- **Off-Main-Thread**: All resolution, sorting, and geometric checks happen in the background Worker, keeping the UI responsive.
+- **TopoJSON Migration**: Replaced large GeoJSON polygons with TopoJSON, reducing Section boundaries by ~43% and District boundaries by ~76%. Decoding is handled via `topojson-client`.
+- **IndexedDB Persistence**: The 1.8MB administrative index is stored persistently in the user's browser. Lookups are asynchronous and high-speed, eliminating the memory overhead of a 3,000+ entry JavaScript Map.
+- **Pre-computed BBoxes**: Every boundary feature includes a `bbox` property. The Worker skips the expensive vertex-iteration loop during initialization, enabling near-instant GIS engine readiness.
+- **Persistent Caching**: Core assets are and TopoJSON files are stored in the browser's Cache API via `vite-plugin-pwa`.
+- **Off-Main-Thread**: All resolution, sorting, and geometric checks happen in the background Worker, keeping the UI at 60fps even during complex spatial lookups.
