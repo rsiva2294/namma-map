@@ -2,7 +2,62 @@
 
 let boundaries = null;
 let offices = null;
-let indexMap = new Map();
+
+// IndexedDB Utility for Permanent Administrative Index (RAM Optimization)
+const IDB = {
+    dbName: 'TNEB_INDEX_DB',
+    storeName: 'admin_index',
+    version: 1,
+
+    async open() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(this.dbName, this.version);
+            request.onupgradeneeded = (e) => {
+                const db = e.target.result;
+                if (!db.objectStoreNames.contains(this.storeName)) {
+                    db.createObjectStore(this.storeName);
+                }
+            };
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    },
+
+    async get(key) {
+        const db = await this.open();
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction(this.storeName, 'readonly');
+            const store = transaction.objectStore(this.storeName);
+            const request = store.get(key);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    },
+
+    async putAll(entries) {
+        const db = await this.open();
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction(this.storeName, 'readwrite');
+            const store = transaction.objectStore(this.storeName);
+            for (const [key, value] of Object.entries(entries)) {
+                store.put(value, key);
+            }
+            transaction.oncomplete = () => resolve();
+            transaction.onerror = () => reject(transaction.error);
+        });
+    },
+
+    async count() {
+        const db = await this.open();
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction(this.storeName, 'readonly');
+            const store = transaction.objectStore(this.storeName);
+            const request = store.count();
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    }
+};
 
 // Ray-casting algorithm for Point-in-Polygon check
 function isPointInPolygon(point, vs) {
@@ -48,64 +103,64 @@ function buildKey(region, section) {
     return `${String(region || "").padStart(2, '0')}_${String(section || "").padStart(3, '0')}`;
 }
 
-// Handle initialization with Persistent Caching
+// Handle initialization with Persistent Caching & IndexedDB
 async function init() {
     const CACHE_NAME = 'tneb-gis-v1';
-    const FILES = ['/TNEB_Section_Boundary.json', '/tneb_section_office.json', '/unified_index_cleaned.json', '/State_boundary.json'];
+    // Optimization: Only fetch the index if IndexedDB is empty
+    const indexCount = await IDB.count().catch(() => 0);
+    const indexNeedsPopulating = indexCount === 0;
+
+    const FILES = ['/TNEB_Section_Boundary.json', '/tneb_section_office.json', '/State_boundary.json'];
+    if (indexNeedsPopulating) {
+        FILES.push('/unified_index_cleaned.json');
+        console.log('Worker: Index empty, queuing for population...');
+    }
 
     try {
-        console.log('Worker: Initializing data (Checking Cache)...');
+        console.log('Worker: Initializing datasets...');
         
         const cache = await caches.open(CACHE_NAME);
         const dataPromises = FILES.map(async (file) => {
             let response = await cache.match(file);
             if (!response) {
-                console.log(`Worker: Cache miss for ${file}, fetching from network...`);
+                console.log(`Worker: Cache miss for ${file}, fetching...`);
                 response = await fetch(file);
-                // We need to clone it to put it in cache because fetch responses can only be read once
                 cache.put(file, response.clone());
-            } else {
-                console.log(`Worker: Cache hit for ${file}`);
             }
             return response.json();
         });
 
-        const [boundaryData, officeData, indexData, stateData] = await Promise.all(dataPromises);
+        const results = await Promise.all(dataPromises);
+        const boundaryData = results[0];
+        const officeData = results[1];
+        const stateData = results[2];
+        const indexData = indexNeedsPopulating ? results[3] : null;
 
-        // Process State Boundary (MultiPolygon)
+        // Populate Index if first load
+        if (indexNeedsPopulating && indexData) {
+            console.log('Worker: Populating IndexedDB...');
+            await IDB.putAll(indexData);
+            console.log('Worker: IndexedDB population complete.');
+        }
+
+        // Process State Boundary
         const stateGeometry = stateData.features[0].geometry;
         self.statePolygons = stateGeometry.type === 'MultiPolygon' ? stateGeometry.coordinates : [stateGeometry.coordinates];
 
-        // Index boundaries with BBoxes (using pre-computed values if available)
+        // Index boundaries with BBoxes
         boundaries = boundaryData.features.map(f => {
             const geometry = f.geometry.type === 'Polygon' ? f.geometry.coordinates[0] : f.geometry.coordinates[0][0];
-            let bbox = f.bbox;
-
-            if (!bbox) {
-                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-                for (const [lng, lat] of geometry) {
-                    if (lng < minX) minX = lng;
-                    if (lng > maxX) maxX = lng;
-                    if (lat < minY) minY = lat;
-                    if (lat > maxY) maxY = lat;
-                }
-                bbox = [minX, minY, maxX, maxY];
-            }
-
             return {
-                bbox,
+                bbox: f.bbox || [0,0,0,0], 
                 geometry,
                 properties: f.properties
             };
         });
 
         offices = officeData.features;
-        
-        // Build Index Map
-        indexMap = new Map(Object.entries(indexData));
 
         self.postMessage({ type: 'READY' });
-        console.log('Worker: Data indexed and ready.');
+        console.log('Worker: GIS Engine Ready.');
     } catch (err) {
         console.error('Worker Init Error:', err);
         self.postMessage({ type: 'ERROR', message: err.message });
@@ -117,8 +172,8 @@ function normalize(val) {
     return String(val || "").trim();
 }
 
-// Search logic
-function processRequest(lat, lng, consumerNumber) {
+// Search logic (Internal Async)
+async function processRequest(lat, lng, consumerNumber) {
     let matchedBoundary = null;
     let sectionKey = null;
     let indexEntry = null;
@@ -159,7 +214,7 @@ function processRequest(lat, lng, consumerNumber) {
     // 2. Resolve Consumer Input
     const parsedConsumer = parseConsumerNumber(consumerNumber);
     const consumerKey = parsedConsumer ? buildKey(parsedConsumer.region, parsedConsumer.section) : null;
-    const consumerEntry = consumerKey ? indexMap.get(consumerKey) : null;
+    const consumerEntry = consumerKey ? await IDB.get(consumerKey) : null;
 
     // 3. Resolve Execution (Precedence: Consumer > Boundary > Proximity)
     if (consumerEntry) {
@@ -176,7 +231,7 @@ function processRequest(lat, lng, consumerNumber) {
     } else if (matchedBoundary) {
         const bProps = matchedBoundary.properties;
         sectionKey = buildKey(bProps.region_cod, bProps.section_co);
-        indexEntry = indexMap.get(sectionKey);
+        indexEntry = await IDB.get(sectionKey);
         
         driver = 'boundary';
         if (indexEntry) {
@@ -188,7 +243,7 @@ function processRequest(lat, lng, consumerNumber) {
         }
     }
 
-    // 4. Fallback: Proximity (only if no boundary and no consumer match)
+    // 4. Fallback: Proximity
     let fallbackOffice = null;
     if (!matchedBoundary && !consumerEntry && lat && lng) {
         let minDistance = Infinity;
@@ -205,11 +260,11 @@ function processRequest(lat, lng, consumerNumber) {
             matchType = 'approximate';
             confidence = 'low';
             sectionKey = buildKey(fallbackOffice.properties.region_id, fallbackOffice.properties.section_co);
-            indexEntry = indexMap.get(sectionKey);
+            indexEntry = await IDB.get(sectionKey);
         }
     }
 
-    // 5. Build Standardized Response
+    // 5. Build Response
     const office = indexEntry?.office || matchedBoundary?.properties?.office || fallbackOffice?.properties || null;
     const formattedOffice = office ? {
         name: office.office_name || office.section_na || 'Unknown Office',
@@ -217,34 +272,25 @@ function processRequest(lat, lng, consumerNumber) {
         distance: (lat && lng && office.lat) ? getDistance(lat, lng, office.lat, office.lng).toFixed(2) : "N/A"
     } : null;
 
-    const distributions = (indexEntry?.distribution_codes || [])
-        .slice(0, 5); // Return up to 5 codes for technical reference
+    const distributions = (indexEntry?.distribution_codes || []).slice(0, 5);
 
     const result = {
         match_type: matchType,
         confidence: confidence,
         driver: driver,
         section_key: sectionKey,
-        
-        boundary: matchedBoundary ? {
-            ...formatJurisdiction(matchedBoundary.properties),
-            geometry: matchedBoundary.geometry
-        } : null,
-        
+        boundary: matchedBoundary ? { ...formatJurisdiction(matchedBoundary.properties), geometry: matchedBoundary.geometry } : null,
         office: formattedOffice,
-        
         section_name: indexEntry?.section_name || matchedBoundary?.properties?.section_na || 'Unknown Section',
         subdivision_code: indexEntry?.subdivision_code || matchedBoundary?.properties?.subdivisio || 'N/A',
         distributions: distributions,
-
         validation: {
-            location_section: matchedBoundary ? indexMap.get(buildKey(matchedBoundary.properties.region_cod, matchedBoundary.properties.section_co))?.section_name || 'N/A' : 'N/A',
+            location_section: matchedBoundary ? (await IDB.get(buildKey(matchedBoundary.properties.region_cod, matchedBoundary.properties.section_co)))?.section_name || 'N/A' : 'N/A',
             consumer_section: consumerEntry ? consumerEntry.section_name : 'N/A',
-            status: 'none'
+            status: 'status'
         }
     };
 
-    // Cross-check status (only if driven by boundary - consumer input overrides mismatch)
     if (driver === 'boundary' && matchedBoundary && consumerEntry) {
         const locationKey = buildKey(matchedBoundary.properties.region_cod, matchedBoundary.properties.section_co);
         result.validation.status = locationKey === consumerKey ? 'match' : 'mismatch';
@@ -376,15 +422,13 @@ function processConsumerLocation(consumerNumber, lastKnownLocation) {
 
 
 
-self.onmessage = (e) => {
+self.onmessage = async (e) => {
     if (e.data.type === 'INIT') {
-        init();
+        await init();
     } else if (e.data.type === 'PROCESS') {
-        processRequest(e.data.lat, e.data.lng, null);
+        await processRequest(e.data.lat, e.data.lng, null);
     } else if (e.data.type === 'PROCESS_CONSUMER') {
-        processRequest(e.data.lastLocation?.lat, e.data.lastLocation?.lng, e.data.number);
-    } else if (e.data.type === 'SEARCH') {
-        performSectionSearch(e.data.query);
+        await processRequest(e.data.lastLocation?.lat, e.data.lastLocation?.lng, e.data.number);
     }
 };
 
