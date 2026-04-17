@@ -1,0 +1,43 @@
+:root {
+  --glass-bg: rgba(255, 255, 255, 0.9);
+  --glass-border: rgba(0, 0, 0, 0.1);
+  --glass-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.15);
+  --accent-primary: #2563eb;
+  --accent-secondary: #3b82f6;
+  --text-main: #0f172a;
+  --text-muted: #475569;
+  --danger: #dc2626;
+  --success: #16a34a;
+
+  /* Additional Dark Mode overrides if needed or specific state vars */
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+body {
+  background-color: #f1f5f9;
+  color: var(--text-main);
+  height: 100vh;
+  overflow: hidden;
+}
+
+body.dark-mode {
+  /* Note: The existing app uses .dark-mode class but variables seem light-ish. 
+     Keeping original logic: root vars are primarily used. 
+  */
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
+}

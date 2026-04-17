@@ -24,7 +24,7 @@
     <meta property="twitter:description" content="Find your exact TNEB electricity jurisdiction and nearest office using real-time GIS data.">
     <meta property="twitter:image" content="https://tneb-section.web.app/preview.png">
 
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="/src/styles/main.css">
 
     <!-- PWA -->
     <meta name="theme-color" content="#0f172a">
@@ -46,7 +46,7 @@
             <div class="drag-handle" id="drag-handle"></div>
 
             <!-- Consumer Number Search -->
-            <div class="consumer-search-container">
+            <div class="consumer-search-container glass-panel">
                 <div class="search-input-group">
                     <i data-lucide="zap" class="icon-primary"></i>
                     <input type="text" id="consumer-number" placeholder="Enter your consumer number" autocomplete="off">
@@ -155,7 +155,7 @@
     </div>
 
     <!-- Scripts -->
-    <script src="main.js" type="module"></script>
+    <script src="/src/main.js" type="module"></script>
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
