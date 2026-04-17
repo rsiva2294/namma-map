@@ -121,3 +121,29 @@ export function drawDistrictLayer(featureData) {
         }
     }).addTo(AppState.map);
 }
+
+export function flashBoundary(geometry) {
+    if (!geometry) return;
+    const flashLayer = L.geoJSON({ type: 'Feature', geometry: geometry }, {
+        style: {
+            color: '#f59e0b',
+            weight: 4,
+            fillOpacity: 0.3,
+            fillColor: '#fbbf24',
+            interactive: false
+        }
+    }).addTo(AppState.map);
+    
+    setTimeout(() => {
+        let opacity = 0.3;
+        const fade = setInterval(() => {
+            opacity -= 0.05;
+            if (opacity <= 0) {
+                clearInterval(fade);
+                AppState.map.removeLayer(flashLayer);
+            } else {
+                flashLayer.setStyle({ fillOpacity: opacity, opacity: opacity * 3 });
+            }
+        }, 40);
+    }, 1200);
+}

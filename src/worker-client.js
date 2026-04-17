@@ -13,7 +13,7 @@ export function initWorker(onReady, onResult, onError, onSuggestions) {
             onReady();
         } else if (type === 'RESULT') {
             onResult(data);
-        } else if (type === 'SEARCH_RESULTS') {
+        } else if (type === 'SUGGESTIONS') {
             onSuggestions(data);
         } else if (type === 'ERROR') {
             onError(message);
@@ -32,5 +32,11 @@ export function requestProcess(lat, lng) {
 export function requestConsumerSearch(number, lastLocation) {
     if (AppState.worker) {
         AppState.worker.postMessage({ type: 'PROCESS_CONSUMER', number, lastLocation });
+    }
+}
+
+export function requestPlaceSearch(query) {
+    if (AppState.worker) {
+        AppState.worker.postMessage({ type: 'SEARCH_PLACE', query });
     }
 }

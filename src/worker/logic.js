@@ -54,7 +54,7 @@ export async function processRequest({ lat, lng, consumerNumber, boundaries, off
     // 2. Consumer Input Resolution
     const parsedConsumer = parseConsumerNumber(consumerNumber);
     const consumerKey = parsedConsumer ? buildKey(parsedConsumer.region, parsedConsumer.section) : null;
-    const consumerEntry = consumerKey ? await IDB.get(consumerKey) : null;
+    const consumerEntry = consumerKey ? await IDB.get(IDB.stores.ADMIN, consumerKey) : null;
 
     // 3. Logic Orchestration
     if (consumerEntry) {
@@ -70,7 +70,7 @@ export async function processRequest({ lat, lng, consumerNumber, boundaries, off
     } else if (matchedBoundary) {
         const bProps = matchedBoundary.properties;
         sectionKey = buildKey(bProps.region_cod, bProps.section_co);
-        indexEntry = await IDB.get(sectionKey);
+        indexEntry = await IDB.get(IDB.stores.ADMIN, sectionKey);
         
         driver = 'boundary';
         if (indexEntry) {
@@ -99,7 +99,7 @@ export async function processRequest({ lat, lng, consumerNumber, boundaries, off
             matchType = 'approximate';
             confidence = 'low';
             sectionKey = buildKey(fallbackOffice.properties.region_id, fallbackOffice.properties.section_co);
-            indexEntry = await IDB.get(sectionKey);
+            indexEntry = await IDB.get(IDB.stores.ADMIN, sectionKey);
         }
     }
 
@@ -122,7 +122,7 @@ export async function processRequest({ lat, lng, consumerNumber, boundaries, off
         subdivision_code: indexEntry?.subdivision_code || matchedBoundary?.properties?.subdivisio || 'N/A',
         distributions: (indexEntry?.distribution_codes || []).slice(0, 5),
         validation: {
-            location_section: toTitleCase(matchedBoundary ? (await IDB.get(buildKey(matchedBoundary.properties.region_cod, matchedBoundary.properties.section_co)))?.section_name || 'N/A' : 'N/A'),
+            location_section: toTitleCase(matchedBoundary ? (await IDB.get(IDB.stores.ADMIN, buildKey(matchedBoundary.properties.region_cod, matchedBoundary.properties.section_co)))?.section_name || 'N/A' : 'N/A'),
             consumer_section: toTitleCase(consumerEntry ? consumerEntry.section_name : 'N/A'),
             status: 'none'
         }
@@ -139,5 +139,25 @@ export async function processRequest({ lat, lng, consumerNumber, boundaries, off
     return { type: 'RESULT', data: result };
 }
 
-// Deprecated or integrated: processConsumerLocation logic is now largely integrated in processRequest 
-// but keeping for compatibility if specific entry points needed.
+export async function searchPlaces(query) {
+    const term = normalize(query);
+    if (!term) return [];
+
+    const allPlaces = await IDB.getAll(IDB.stores.PLACES);
+    
+    // Mix and match: PIN code, Office Name, District
+    return allPlaces
+        .filter(p => {
+            return p.pin_code.startsWith(term) || 
+                   normalize(p.office_nam).includes(term) ||
+                   normalize(p.district).includes(term);
+        })
+        .slice(0, 8)
+        .map(p => ({
+            name: `${toTitleCase(p.office_nam)}, ${toTitleCase(p.district)}`,
+            details: `PIN: ${p.pin_code}`,
+            center: p.center,
+            geometry: p.geometry,
+            type: 'place'
+        }));
+}

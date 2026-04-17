@@ -47,7 +47,7 @@ export function buildKey(region, section) {
 }
 
 export function normalize(val) {
-    return String(val || "").trim();
+    return String(val || "").trim().toLowerCase();
 }
 
 /**

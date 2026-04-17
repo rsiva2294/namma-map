@@ -3,7 +3,7 @@
  */
 import { feature } from 'topojson-client';
 import { IDB } from './db';
-import { processRequest } from './logic';
+import { processRequest, searchPlaces } from './logic';
 
 let boundaries = null;
 let offices = null;
@@ -11,13 +11,15 @@ let statePolygons = null;
 
 async function init() {
     const CACHE_NAME = 'tneb-gis-v1';
-    const indexCount = await IDB.count().catch(() => 0);
+    const indexCount = await IDB.count(IDB.stores.ADMIN).catch(() => 0);
+    const placesCount = await IDB.count(IDB.stores.PLACES).catch(() => 0);
+    
     const indexNeedsPopulating = indexCount === 0;
+    const placesNeedsPopulating = placesCount === 0;
 
     const FILES = ['/TNEB_Section_Boundary.json', '/tneb_section_office.json', '/State_boundary.json'];
-    if (indexNeedsPopulating) {
-        FILES.push('/unified_index_cleaned.json');
-    }
+    if (indexNeedsPopulating) FILES.push('/unified_index_cleaned.json');
+    if (placesNeedsPopulating) FILES.push('/PIN_code_Boundary.json');
 
     try {
         const cache = await caches.open(CACHE_NAME);
@@ -31,10 +33,16 @@ async function init() {
         });
 
         const results = await Promise.all(dataPromises);
-        let boundaryData = results[0];
-        const officeData = results[1];
-        const stateData = results[2];
-        const indexData = indexNeedsPopulating ? results[3] : null;
+        
+        // Map results back to variables
+        let boundaryData, officeData, stateData, indexData, placesData;
+        
+        let resIdx = 0;
+        boundaryData = results[resIdx++];
+        officeData = results[resIdx++];
+        stateData = results[resIdx++];
+        if (indexNeedsPopulating) indexData = results[resIdx++];
+        if (placesNeedsPopulating) placesData = results[resIdx++];
 
         // Decode Sections
         if (boundaryData.type === 'Topology') {
@@ -43,7 +51,36 @@ async function init() {
 
         // Populate Index
         if (indexNeedsPopulating && indexData) {
-            await IDB.putAll(indexData);
+            await IDB.putAll(IDB.stores.ADMIN, indexData);
+        }
+
+        // Populate Places
+        if (placesNeedsPopulating && placesData) {
+            let pinFeatures = feature(placesData, placesData.objects.PIN_code_Boundary).features;
+            const placeEntries = {};
+            pinFeatures.forEach((f, idx) => {
+                const props = f.properties;
+                const geometry = f.geometry.type === 'Polygon' ? f.geometry.coordinates[0] : f.geometry.coordinates[0][0];
+                
+                // BBox and Center
+                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                for (const [lng, lat] of geometry) {
+                    if (lng < minX) minX = lng;
+                    if (lng > maxX) maxX = lng;
+                    if (lat < minY) minY = lat;
+                    if (lat > maxY) maxY = lat;
+                }
+                const center = [(minY + maxY) / 2, (minX + maxX) / 2];
+                
+                placeEntries[`pin_${idx}`] = {
+                    pin_code: props.pin_code,
+                    office_nam: props.office_nam,
+                    district: props.district,
+                    center: center,
+                    geometry: f.geometry
+                };
+            });
+            await IDB.putAll(IDB.stores.PLACES, placeEntries);
         }
 
         // Process State Boundary
@@ -79,7 +116,7 @@ async function init() {
 }
 
 self.onmessage = async (e) => {
-    const { type, lat, lng, number, lastLocation } = e.data;
+    const { type, lat, lng, number, lastLocation, query } = e.data;
 
     switch (type) {
         case 'INIT':
@@ -90,7 +127,6 @@ self.onmessage = async (e) => {
             self.postMessage(res);
             break;
         case 'PROCESS_CONSUMER':
-            // Logic integrated in processRequest, using coords from lastLocation if provided
             const cres = await processRequest({ 
                 lat: lastLocation?.lat, 
                 lng: lastLocation?.lng, 
@@ -100,6 +136,10 @@ self.onmessage = async (e) => {
                 statePolygons 
             });
             self.postMessage(cres);
+            break;
+        case 'SEARCH_PLACE':
+            const suggestions = await searchPlaces(query);
+            self.postMessage({ type: 'SUGGESTIONS', data: suggestions });
             break;
     }
 };

@@ -14,7 +14,7 @@ export const UIController = {
     },
 
     bindEvents({ 
-        onGPS, onExplore, onConsumerSearch, onDistrictSelect, onSearchInput, onReset 
+        onGPS, onExplore, onConsumerSearch, onPlaceSelect, onPlaceSearch, onReset 
     }) {
         document.getElementById(SELECTORS.MAIN_GPS_BTN).onclick = onGPS;
         document.getElementById(SELECTORS.FAB_GPS).onclick = onGPS;
@@ -42,12 +42,8 @@ export const UIController = {
 
         this.initDraggableSheet();
 
-        // District Search
-        this.setupDistrictSearch(onDistrictSelect);
-
-        // Locality Search suggestions (from main.js logic)
-        // Note: localities search was referenced but maybe not fully implemented in main.js
-        // as a separate binding? Actually handleSearchInput was called from somewhere.
+        // Unified Place Search (PIN, Locality, District)
+        this.setupPlaceSearch(onPlaceSearch, onPlaceSelect);
     },
 
     togglePanel(id, show) {
@@ -129,20 +125,19 @@ export const UIController = {
         });
     },
 
-    setupDistrictSearch(onSelect) {
-        const input = document.getElementById(SELECTORS.DISTRICT_SEARCH);
-        const results = document.getElementById(SELECTORS.DISTRICT_RESULTS);
+    setupPlaceSearch(onSearch, onSelect) {
+        const input = document.getElementById(SELECTORS.PLACE_SEARCH);
+        const results = document.getElementById(SELECTORS.PLACE_RESULTS);
 
         if (!input || !results) return;
 
         input.addEventListener('input', (e) => {
-            const query = e.target.value.toLowerCase().trim();
-            if (!query) {
+            const query = e.target.value.trim();
+            if (!query || query.length < 2) {
                 results.classList.add('hidden');
                 return;
             }
-            const filtered = AppState.districts.filter(d => d.name.toLowerCase().includes(query));
-            this.renderDistrictResults(filtered, onSelect);
+            onSearch(query);
         });
 
         document.addEventListener('click', (e) => {
@@ -150,27 +145,29 @@ export const UIController = {
                 results.classList.add('hidden');
             }
         });
-
-        input.addEventListener('focus', () => {
-            if (!input.value.trim()) this.renderDistrictResults(AppState.districts, onSelect);
-        });
     },
 
-    renderDistrictResults(list, onSelect) {
-        const results = document.getElementById(SELECTORS.DISTRICT_RESULTS);
+    renderPlaceResults(list, onSelect) {
+        const results = document.getElementById(SELECTORS.PLACE_RESULTS);
+        if (!results) return;
         results.innerHTML = '';
         
         if (list.length === 0) {
-            results.innerHTML = '<div class="district-item no-results">No districts found</div>';
+            results.innerHTML = '<div class="district-item no-results">No places found</div>';
         } else {
-            list.forEach(d => {
+            list.forEach(p => {
                 const div = document.createElement('div');
                 div.className = 'district-item';
-                div.textContent = d.name;
+                div.innerHTML = `
+                    <div class="suggestion-content">
+                        <span class="suggestion-name">${p.name}</span>
+                        <span class="suggestion-details">${p.details}</span>
+                    </div>
+                `;
                 div.onclick = () => {
-                    document.getElementById(SELECTORS.DISTRICT_SEARCH).value = d.name;
+                    document.getElementById(SELECTORS.PLACE_SEARCH).value = p.name;
                     results.classList.add('hidden');
-                    onSelect(d);
+                    onSelect(p);
                 };
                 results.appendChild(div);
             });

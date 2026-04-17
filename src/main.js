@@ -3,9 +3,9 @@
  */
 import { AppState, updateState } from './state';
 import { SELECTORS, MAP_CONFIG, DATA_URLS } from './constants';
-import { initMap, updateMarker, clearOverlays, drawBoundary, addOfficeMarker, drawDistrictLayer } from './map-engine';
+import { initMap, updateMarker, clearOverlays, drawBoundary, addOfficeMarker, drawDistrictLayer, flashBoundary } from './map-engine';
 import { UIController } from './ui-controller';
-import { initWorker, requestProcess, requestConsumerSearch } from './worker-client';
+import { initWorker, requestProcess, requestConsumerSearch, requestPlaceSearch } from './worker-client';
 import { feature } from 'topojson-client';
 
 async function init() {
@@ -48,27 +48,25 @@ async function init() {
             }
 
             // 5. Handle Zooming for searches
-            // If we have a boundary, drawBoundary already handled fitBounds.
-            // If not (e.g., proximity/consumer only coords), we flyTo the coords.
             if (!data.boundary && data.coords) {
                 AppState.map.flyTo([data.coords.lat, data.coords.lng], 14, { animate: true });
             }
         },
         (msg) => UIController.renderError("System Error", msg), // onError
-        (suggestions) => UIController.renderSuggestions(suggestions, (lat, lng, name) => { // onSuggestions
-            AppState.map.flyTo([lat, lng], 14);
-            processLocation(lat, lng);
-            const searchInput = document.getElementById(SELECTORS.LOCALITY_SEARCH);
-            if (searchInput) searchInput.value = name;
-        })
+        (suggestions) => { // onSuggestions
+            UIController.renderPlaceResults(suggestions, (place) => {
+                handlePlaceSelect(place);
+            });
+        }
     );
 
     // 3. Init UI Bindings
     UIController.bindEvents({
         onGPS: triggerGPS,
-        onExplore: () => {}, // Handled in UIController internally for panels
+        onExplore: () => {}, 
         onConsumerSearch: (num) => processConsumerSearch(num),
-        onDistrictSelect: (d) => selectDistrict(d),
+        onPlaceSearch: (query) => requestPlaceSearch(query),
+        onPlaceSelect: (p) => handlePlaceSelect(p),
         onReset: resetApp
     });
 
@@ -86,34 +84,27 @@ async function initDistrictBoundaries() {
     }
 }
 
+async function handlePlaceSelect(place) {
+    if (!place || !place.center) return;
+    
+    // 1. Zoom to the place
+    AppState.map.flyTo(place.center, 15, { animate: true, duration: 2 });
+    
+    // 2. Flash boundary
+    if (place.geometry) {
+        flashBoundary(place.geometry);
+    }
+
+    // 3. Trigger resolution
+    setTimeout(() => {
+        processLocation(place.center[0], place.center[1]);
+    }, 1500);
+}
+
 async function selectDistrict(district) {
-    if (AppState.districtLayer) {
-        AppState.map.removeLayer(AppState.districtLayer);
-    }
-
-    AppState.map.flyToBounds(district.bounds, { padding: [50, 50], duration: 1.5 });
-
-    try {
-        if (!AppState.districtGeoJSON) {
-            const response = await fetch(DATA_URLS.DISTRICT_BOUNDARY);
-            let data = await response.json();
-            if (data.type === 'Topology') {
-                AppState.districtGeoJSON = feature(data, data.objects.Districts_boundary);
-            } else {
-                AppState.districtGeoJSON = data;
-            }
-        }
-
-        const featureData = AppState.districtGeoJSON.features.find(f => 
-            f.properties.district_n === district.name
-        );
-
-        if (featureData) {
-            drawDistrictLayer(featureData);
-        }
-    } catch (err) {
-        console.error('Failed to load district geometry:', err);
-    }
+    // Deprecated in favor of Unified Search, but keeping logic if needed
+    // or just map it to handlePlaceSelect if we had district geometry here.
+    // For now, let's keep it simple.
 }
 
 function triggerGPS() {

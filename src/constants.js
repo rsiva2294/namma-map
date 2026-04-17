@@ -21,8 +21,8 @@ export const DATA_URLS = {
 export const SELECTORS = {
     MAP: 'map',
     LOADING_OVERLAY: 'loading-overlay',
-    DISTRICT_SEARCH: 'district-search',
-    DISTRICT_RESULTS: 'district-results',
+    PLACE_SEARCH: 'place-search',
+    PLACE_RESULTS: 'place-results',
     CONSUMER_NUMBER: 'consumer-number',
     CONSUMER_SEARCH_BTN: 'consumer-search-btn',
     MAIN_GPS_BTN: 'main-gps-btn',
