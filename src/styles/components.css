@@ -766,7 +766,11 @@
   .office-card .card-content { flex-direction: column; align-items: stretch; gap: 12px; }
   .office-card .nav-btn { width: 100% !important; margin-top: 4px !important; }
 
-  /* Compact Initial View for Mobile */
+  /* Hide Services and FAB globally on mobile results for maximum clarity */
+  body.showing-results .quick-links { display: none !important; }
+  body.showing-results #fab-gps { display: none !important; }
+
+  /* Compact Initial View for Mobile (only shown on home) */
   .quick-links.init-view {
       margin-top: 12px;
       padding-top: 8px;
@@ -789,9 +793,6 @@
   .quick-links.init-view .service-link i { width: 22px; height: 22px; }
 
   #fab-gps { bottom: 140px; right: 20px; width: 44px; height: 44px; }
-  
-  /* Hide FAB when viewing results to give map more room */
-  .showing-results #fab-gps { display: none !important; }
 }
 
 /* Loader Specifics */

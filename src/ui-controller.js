@@ -90,10 +90,6 @@ export const UIController = {
         if (searchCard) L.DomEvent.disableClickPropagation(searchCard);
         L.DomEvent.disableScrollPropagation(panel);
         
-        if (window.innerWidth <= 640 && !AppState.isSearching) {
-            panel.style.height = '35vh'; // Slightly lower default for the compact tabs
-        }
-
         let startY, startHeight;
         let isDragging = false;
 
@@ -112,7 +108,7 @@ export const UIController = {
             const newHeight = startHeight + delta;
             
             const maxHeight = window.innerHeight * 0.85;
-            const minHeight = window.innerHeight * 0.2; 
+            const minHeight = window.innerHeight * 0.15; 
             if (newHeight >= minHeight && newHeight <= maxHeight) {
                 panel.style.height = `${newHeight}px`;
             }
@@ -125,17 +121,19 @@ export const UIController = {
             
             const currentHeight = panel.offsetHeight;
             const delta = currentHeight - startHeight;
-            const threshold = Math.min(window.innerHeight * 0.15, 60);
+            const threshold = 30; // More responsive threshold
             
             panel.style.height = ''; 
             
             if (delta > threshold) panel.classList.add('expanded');
             else if (delta < -threshold) panel.classList.remove('expanded');
             else {
-                if (currentHeight > window.innerHeight * 0.5) panel.classList.add('expanded');
+                // If snap is neutral, check absolute height
+                if (currentHeight > window.innerHeight * 0.4) panel.classList.add('expanded');
                 else panel.classList.remove('expanded');
             }
         });
+        
 
         handle.addEventListener('click', () => {
             if (window.innerWidth <= 640 && !isDragging) {

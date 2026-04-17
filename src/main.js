@@ -138,8 +138,7 @@ function processLocation(lat, lng, zoom = false) {
     }
 
     UIController.togglePanel(SELECTORS.SEARCH_CARD, false);
-    UIController.togglePanel(SELECTORS.FAB_GPS, true); // Hide FAB on mobile via CSS showing-results
-    document.getElementById(SELECTORS.SIDE_PANEL).classList.add('showing-results');
+    document.body.classList.add('showing-results');
     UIController.togglePanel(SELECTORS.RESULTS_PANEL, true);
 
     const ql = document.getElementById('quick-links-panel');
@@ -164,8 +163,7 @@ function processLocation(lat, lng, zoom = false) {
 
 function processConsumerSearch(number) {
     UIController.togglePanel(SELECTORS.SEARCH_CARD, false);
-    UIController.togglePanel(SELECTORS.FAB_GPS, true); // Hide FAB on mobile via CSS showing-results
-    document.getElementById(SELECTORS.SIDE_PANEL).classList.add('showing-results');
+    document.body.classList.add('showing-results');
     UIController.togglePanel(SELECTORS.RESULTS_PANEL, true);
 
     const ql = document.getElementById('quick-links-panel');
@@ -211,6 +209,8 @@ function resetApp() {
     if (localityTabBtn) localityTabBtn.click();
 
     // Reset Quick Links to Initial View
+    document.body.classList.remove('showing-results');
+    
     const panel = document.getElementById(SELECTORS.SIDE_PANEL);
     if (panel) panel.classList.remove('showing-results');
     
