@@ -756,9 +756,12 @@
   .search-input-group input { font-size: 0.85rem; }
   
   .selection-summary { padding: 12px; gap: 12px; }
-  .selection-address { font-size: 0.9rem; }
+  .selection-address { font-size: 0.85rem; }
+  .selection-coords { font-size: 0.65rem; }
   
   .hierarchy-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .h-value { font-size: 0.8rem; }
+  .h-label { font-size: 0.55rem; }
   
   .office-card .card-content { flex-direction: column; align-items: stretch; gap: 12px; }
   .office-card .nav-btn { width: 100% !important; margin-top: 4px !important; }
@@ -786,6 +789,9 @@
   .quick-links.init-view .service-link i { width: 22px; height: 22px; }
 
   #fab-gps { bottom: 140px; right: 20px; width: 44px; height: 44px; }
+  
+  /* Hide FAB when viewing results to give map more room */
+  .showing-results #fab-gps { display: none !important; }
 }
 
 /* Loader Specifics */
