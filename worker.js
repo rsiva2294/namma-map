@@ -155,11 +155,30 @@ async function init() {
         const stateGeometry = stateData.features[0].geometry;
         self.statePolygons = stateGeometry.type === 'MultiPolygon' ? stateGeometry.coordinates : [stateGeometry.coordinates];
 
-        // Index boundaries with BBoxes
+        // Index boundaries with robust BBox resolution & fallback
         boundaries = boundaryData.features.map(f => {
             const geometry = f.geometry.type === 'Polygon' ? f.geometry.coordinates[0] : f.geometry.coordinates[0][0];
+            
+            // Multi-layered BBox Resolution
+            let bbox = f.bbox; // 1. Check Standard root
+            if (!bbox && f.properties?.precomputed_bbox) {
+                bbox = f.properties.precomputed_bbox; // 2. Check buried property
+            }
+            
+            // 3. Fallback: On-the-fly calculation
+            if (!bbox) {
+                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                for (const [lng, lat] of geometry) {
+                    if (lng < minX) minX = lng;
+                    if (lng > maxX) maxX = lng;
+                    if (lat < minY) minY = lat;
+                    if (lat > maxY) maxY = lat;
+                }
+                bbox = [minX, minY, maxX, maxY];
+            }
+
             return {
-                bbox: f.bbox || [0,0,0,0], 
+                bbox,
                 geometry,
                 properties: f.properties
             };
