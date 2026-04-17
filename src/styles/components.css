@@ -77,6 +77,7 @@
   padding: 0;
   overflow: hidden;
   pointer-events: auto;
+  flex-shrink: 0;
 }
 
 .tabs-header {
@@ -761,6 +762,28 @@
   
   .office-card .card-content { flex-direction: column; align-items: stretch; gap: 12px; }
   .office-card .nav-btn { width: 100% !important; margin-top: 4px !important; }
+
+  /* Compact Initial View for Mobile */
+  .quick-links.init-view {
+      margin-top: 12px;
+      padding-top: 8px;
+  }
+  .quick-links.init-view h3 { font-size: 0.65rem; margin-bottom: 8px; }
+  .quick-links.init-view .link-wrapper {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      gap: 8px;
+  }
+  .quick-links.init-view .service-link {
+      flex: 1;
+      aspect-ratio: 1 / 1;
+      padding: 12px;
+      flex-direction: column;
+      gap: 0;
+  }
+  .quick-links.init-view .service-link span { display: none; }
+  .quick-links.init-view .service-link i { width: 22px; height: 22px; }
 
   #fab-gps { bottom: 140px; right: 20px; width: 44px; height: 44px; }
 }
