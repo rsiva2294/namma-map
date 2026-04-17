@@ -763,36 +763,13 @@
   .h-value { font-size: 0.72rem; }
   .h-label { font-size: 0.48rem; letter-spacing: 0.03em; }
   
-  .office-card .card-content { flex-direction: column; align-items: stretch; gap: 10px; padding: 12px 16px; }
-  .office-card h4 { font-size: 0.8rem; }
-  .office-card p { font-size: 0.7rem; }
-  .office-card .nav-btn { width: 100% !important; margin-top: 4px !important; font-size: 0.8rem; padding: 10px; }
+  .office-card .card-content { flex-direction: column; align-items: stretch; gap: 8px; padding: 10px 16px; }
+  .office-card h4 { font-size: 0.72rem; }
+  .office-card p { font-size: 0.62rem; line-height: 1.4; }
+  .office-card .nav-btn { width: 100% !important; margin-top: 4px !important; font-size: 0.75rem; padding: 8px; }
 
-  /* Hide Services and FAB globally on mobile results for maximum clarity */
-  body.showing-results .quick-links { display: none !important; }
-  body.showing-results #fab-gps { display: none !important; }
-
-  /* Compact Initial View for Mobile (only shown on home) */
-  .quick-links.init-view {
-      margin-top: 12px;
-      padding-top: 8px;
-  }
-  .quick-links.init-view h3 { font-size: 0.65rem; margin-bottom: 8px; }
-  .quick-links.init-view .link-wrapper {
-      display: flex;
-      flex-direction: row;
-      justify-content: space-between;
-      gap: 8px;
-  }
-  .quick-links.init-view .service-link {
-      flex: 1;
-      aspect-ratio: 1 / 1;
-      padding: 12px;
-      flex-direction: column;
-      gap: 0;
-  }
-  .quick-links.init-view .service-link span { display: none; }
-  .quick-links.init-view .service-link i { width: 22px; height: 22px; }
+  /* Removed Quick Services from Mobile view altogether */
+  .quick-links { display: none !important; }
 
   #fab-gps { bottom: 140px; right: 20px; width: 44px; height: 44px; }
 }
