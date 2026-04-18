@@ -24,6 +24,8 @@ A high-performance, privacy-first GIS application designed to help Tamil Nadu el
 - **Contextual Search Guidance**: Hoverable region code examples (03-North, 04-Central, etc.) to help users find their 12-digit consumer numbers.
 - **Micro-Animations**: Sequential fade-in effects, smooth panel transitions, and pulse markers for a premium, alive application feel.
 - **Interactive Context**: Visual badges and hierarchy grids clearly display administrative identity.
+- **Data Safeguarding**: All GIS and administrative data files are encrypted at rest to prevent unauthorized scraping while maintaining high-speed in-browser resolution.
+- **Intelligent Formatting**: Administrative hierarchies and office names are automatically formatted to Title Case with support for technical abbreviations like **O&M**.
 
 ## 🛠️ How it Works
 

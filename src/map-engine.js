@@ -5,6 +5,9 @@ import L from 'leaflet';
 import { AppState } from './state';
 import { MAP_CONFIG, DATA_URLS, SELECTORS } from './constants';
 import { isPointInGeoJSON } from './utils/geo';
+import { decryptData } from './utils/format';
+
+const SECRET_KEY = import.meta.env.VITE_GIS_SECRET_KEY;
 
 export function initMap(onMapClick, onPopupOpen) {
     AppState.map = L.map(SELECTORS.MAP, {
@@ -39,7 +42,8 @@ export function initMap(onMapClick, onPopupOpen) {
 async function initStateBoundary() {
     try {
         const response = await fetch(DATA_URLS.STATE_BOUNDARY);
-        const data = await response.json();
+        const buffer = await response.arrayBuffer();
+        const data = JSON.parse(decryptData(buffer, SECRET_KEY));
         AppState.stateBoundaryGeoJSON = data;
         
         L.geoJSON(data, {

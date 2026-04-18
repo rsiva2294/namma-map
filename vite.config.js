@@ -9,7 +9,7 @@ export default defineConfig({
         'favicon.ico', 
         'robots.txt', 
         'apple-touch-icon.png',
-        '*.json', // Cache all GeoJSON/Index data
+        '*.dat', // Cache encrypted data
         '*.png'
       ],
       manifest: {
@@ -33,7 +33,7 @@ export default defineConfig({
         // Caching strategies for large data files and the GIS worker
         runtimeCaching: [
           {
-            urlPattern: /.*\.json/,
+            urlPattern: /.*\.dat/,
             handler: 'CacheFirst',
             options: {
               cacheName: 'tneb-data-cache',

@@ -31,13 +31,13 @@ The application relies on a multi-layered data system to balance precision, spee
 
 | File Name | Purpose | Format | Hydration |
 | :--- | :--- | :--- | :--- |
-| `unified_index_cleaned.json` | Master administrative lookup table. | JSON (Keyed) | IndexedDB (`admin_index`) |
-| `TNEB_Section_Boundary.json` | Spatial boundaries for all TNEB Sections. | TopoJSON | RAM (Feature Collection) |
-| `tneb_section_office.json` | Office coordinates for proximity fallback. | GeoJSON | RAM (Feature Collection) |
-| `PIN_code_Boundary.json` | PIN code polygons for search suggestions. | TopoJSON | IndexedDB (`places_index`) |
-| `State_boundary.json` | Tamil Nadu boundary for validity checks. | GeoJSON | RAM (Polygon Array) |
-| `Districts_boundary.json` | District-level polygons for visualization. | TopoJSON | Leaflet Layer |
-| `districts_meta.json` | Metadata for district bounding boxes. | JSON (Array) | RAM |
+| `unified_index_cleaned.dat` | Master administrative lookup table. | Encrypted JSON | IndexedDB (`admin_index`) |
+| `TNEB_Section_Boundary.dat` | Spatial boundaries for all TNEB Sections. | Encrypted TopoJSON | RAM (Feature Collection) |
+| `tneb_section_office.dat` | Office coordinates for proximity fallback. | Encrypted GeoJSON | RAM (Feature Collection) |
+| `PIN_code_Boundary.dat` | PIN code polygons for search suggestions. | Encrypted TopoJSON | IndexedDB (`places_index`) |
+| `State_boundary.dat` | Tamil Nadu boundary for validity checks. | Encrypted GeoJSON | RAM (Polygon Array) |
+| `Districts_boundary.dat` | District-level polygons for visualization. | Encrypted TopoJSON | Leaflet Layer |
+| `districts_meta.dat` | Metadata for district bounding boxes. | Encrypted JSON | RAM |
 
 ### Key-Value Schemas
 
@@ -115,3 +115,24 @@ The project is configured for **Firebase Hosting**:
 - **Pre-computed BBoxes**: Every boundary feature includes a `bbox` property. The Worker skips the expensive vertex-iteration loop during initialization, enabling near-instant GIS engine readiness.
 - **Persistent Caching**: Core assets and TopoJSON files are stored in the browser's Cache API via `vite-plugin-pwa`.
 - **Off-Main-Thread**: All resolution, sorting, and geometric checks happen in the background Worker, keeping the UI at 60fps even during complex spatial lookups.
+
+## 🔒 Data Safeguarding & Security
+
+To prevent unauthorized scraping and reuse of the cleaned TNEB dataset, all static assets in the `public/` folder are encrypted at rest using a multi-byte XOR transformation.
+
+### Encryption Workflow
+1. Raw `.json` data files are processed using `scripts/encrypt-data.js`.
+2. The script reads the `VITE_GIS_SECRET_KEY` from the `.env` file.
+3. Encrypted binary files are saved with the `.dat` extension.
+4. Only `.dat` files are committed to the repository and deployed.
+
+### Decryption Flow
+- **Worker Thread**: On initialization, the worker fetches `.dat` files, decrypts them in memory using the same secret key, and parses the resulting JSON.
+- **Main Thread**: Used for spatial validity checks (State boundary) and district visualization metadata.
+
+### Adding New Data
+If you update any data file:
+1. Place the new `.json` file in `public/`.
+2. Run `node scripts/encrypt-data.js`.
+3. Delete the original `.json` file.
+4. Commit the new `.dat` file.

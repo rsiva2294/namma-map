@@ -4,6 +4,9 @@
 import { feature } from 'topojson-client';
 import { IDB } from './db';
 import { processRequest, searchPlaces } from './logic';
+import { decryptData } from '../utils/format';
+
+const SECRET_KEY = import.meta.env.VITE_GIS_SECRET_KEY || 'default-fallback-key';
 
 let boundaries = null;
 let offices = null;
@@ -17,9 +20,9 @@ async function init() {
     const indexNeedsPopulating = indexCount === 0;
     const placesNeedsPopulating = placesCount === 0;
 
-    const FILES = ['/TNEB_Section_Boundary.json', '/tneb_section_office.json', '/State_boundary.json'];
-    if (indexNeedsPopulating) FILES.push('/unified_index_cleaned.json');
-    if (placesNeedsPopulating) FILES.push('/PIN_code_Boundary.json');
+    const FILES = ['/TNEB_Section_Boundary.dat', '/tneb_section_office.dat', '/State_boundary.dat'];
+    if (indexNeedsPopulating) FILES.push('/unified_index_cleaned.dat');
+    if (placesNeedsPopulating) FILES.push('/PIN_code_Boundary.dat');
 
     try {
         const cache = await caches.open(CACHE_NAME);
@@ -29,7 +32,8 @@ async function init() {
                 response = await fetch(file);
                 cache.put(file, response.clone());
             }
-            return response.json();
+            const buffer = await response.arrayBuffer();
+            return JSON.parse(decryptData(buffer, SECRET_KEY));
         });
 
         const results = await Promise.all(dataPromises);

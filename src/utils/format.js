@@ -19,3 +19,16 @@ export function toTitleCase(str) {
         .replace(/\bIii\b/g, 'III')
         .replace(/\bIv\b/g, 'IV');
 }
+
+/**
+ * Decrypts data using XOR transformation
+ */
+export function decryptData(buffer, key) {
+    const keyBuffer = new TextEncoder().encode(key);
+    const data = new Uint8Array(buffer);
+    const result = new Uint8Array(data.length);
+    for (let i = 0; i < data.length; i++) {
+        result[i] = data[i] ^ keyBuffer[i % keyBuffer.length];
+    }
+    return new TextDecoder().decode(result);
+}

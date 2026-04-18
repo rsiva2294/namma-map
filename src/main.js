@@ -6,6 +6,7 @@ import { SELECTORS, MAP_CONFIG, DATA_URLS } from './constants';
 import { initMap, updateMarker, clearOverlays, drawBoundary, addOfficeMarker, drawDistrictLayer, flashBoundary, isInsideTamilNadu } from './map-engine';
 import { UIController } from './ui-controller';
 import { initWorker, requestProcess, requestConsumerSearch, requestPlaceSearch } from './worker-client';
+import { decryptData } from './utils/format';
 import { feature } from 'topojson-client';
 
 async function init() {
@@ -77,7 +78,8 @@ async function init() {
 async function initDistrictBoundaries() {
     try {
         const response = await fetch(DATA_URLS.DISTRICT_METADATA);
-        const districts = await response.json();
+        const buffer = await response.arrayBuffer();
+        const districts = JSON.parse(decryptData(buffer, import.meta.env.VITE_GIS_SECRET_KEY));
         updateState({ districts });
     } catch (err) {
         console.error('Failed to load district metadata:', err);

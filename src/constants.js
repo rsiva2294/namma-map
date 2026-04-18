@@ -13,9 +13,9 @@ export const MAP_CONFIG = {
 };
 
 export const DATA_URLS = {
-    STATE_BOUNDARY: '/State_boundary.json',
-    DISTRICT_METADATA: '/districts_meta.json',
-    DISTRICT_BOUNDARY: '/Districts_boundary.json'
+    STATE_BOUNDARY: '/State_boundary.dat',
+    DISTRICT_METADATA: '/districts_meta.dat',
+    DISTRICT_BOUNDARY: '/Districts_boundary.dat'
 };
 
 export const SELECTORS = {
