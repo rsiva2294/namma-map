@@ -23,26 +23,78 @@ The application follows a strict precedence order to determine the primary juris
 2. **Boundary** (Spatial): Point-in-polygon match based on map location.
 3. **Proximity** (Last Resort): Nearest office if no boundary or consumer is found.
 
+## 📊 Data Architecture & Schema
+
+The application relies on a multi-layered data system to balance precision, speed, and memory efficiency.
+
+### File Manifest & Usage
+
+| File Name | Purpose | Format | Hydration |
+| :--- | :--- | :--- | :--- |
+| `unified_index_cleaned.json` | Master administrative lookup table. | JSON (Keyed) | IndexedDB (`admin_index`) |
+| `TNEB_Section_Boundary.json` | Spatial boundaries for all TNEB Sections. | TopoJSON | RAM (Feature Collection) |
+| `tneb_section_office.json` | Office coordinates for proximity fallback. | GeoJSON | RAM (Feature Collection) |
+| `PIN_code_Boundary.json` | PIN code polygons for search suggestions. | TopoJSON | IndexedDB (`places_index`) |
+| `State_boundary.json` | Tamil Nadu boundary for validity checks. | GeoJSON | RAM (Polygon Array) |
+| `Districts_boundary.json` | District-level polygons for visualization. | TopoJSON | Leaflet Layer |
+| `districts_meta.json` | Metadata for district bounding boxes. | JSON (Array) | RAM |
+
+### Key-Value Schemas
+
+#### 1. Administrative Index (`admin_index`)
+Used for resolving Region/Section codes (from Consumer Numbers or Spatial hits) into office details.
+- **Primary Key**: `"{region}_{section}"` (e.g., `"01_071"`)
+- **Schema**:
+    - `region`: (String) 2-digit TNEB Region code.
+    - `section`: (String) 3-digit Section Office code.
+    - `section_name`: (String) Human-readable name (e.g., `"Agaram"`).
+    - `subdivision_code`: (String) Unique subdivision identifier.
+    - `office`: (Object)
+        - `office_name`: Official office title.
+        - `lat` / `lng`: GPS coordinates for office location.
+    - `distribution_codes`: (Array<String>) 3-digit sub-section codes used in consumer numbers.
+
+#### 2. Spatial Boundary Features (`TNEB_Section_Boundary`)
+Properties within the GeoJSON features used for spatial matching.
+- `region_cod`: (String) Maps to `region`.
+- `section_co`: (String) Maps to `section`.
+- `section_na`: (String) Section name.
+- `subdivisio`: (String) Subdivision name.
+- `bbox`: (Array) Pre-computed `[minLng, minLat, maxLng, maxLat]`.
+
+#### 3. Search Suggestions (`places_index`)
+Hydrated from `PIN_code_Boundary` for real-time address/PIN search.
+- **Schema**:
+    - `pin_code`: (String) 6-digit PIN.
+    - `office_nam`: (String) Post office name.
+    - `district`: (String) District name.
+    - `center`: (Array) `[lat, lng]` for map centering.
+    - `geometry`: (Object) GeoJSON geometry for boundary highlighting.
+
 ## 📱 Mobile Gesture & UI System
 
-The application implements a custom draggable bottom sheet for mobile devices (`initDraggableSheet`) with several advanced behaviors:
+The application implements a custom **3-stage adaptive bottom sheet** for mobile devices (`initDraggableSheet`) with the following logic:
 
 ### Draggable Sheet Logic
 - **Real-time Tracking**: Uses `touchstart` and `touchmove` to track vertical finger movement on the drag handle.
-- **Threshold Snapping**: Autonomously snaps to "expanded" (85vh) or "collapsed" (120px) states based on a 15% height delta threshold.
-- **UX Breathing Room**: Implements a 2.5s-3s delay before auto-expanding the panel (`toggleMobilePanel(true)`) to allow users to visually confirm their selection.
+- **3-Stage Snapping**:
+  - **Minimized (< 120px)**: Snaps to a "peek" state showing only the drag handle and core search status.
+  - **Compact (Middle)**: Default state when results are shown but not full-screen.
+  - **Expanded (> 50% screen)**: Snaps to 85vh for full-detail reading.
+- **Threshold Snapping**: Autonomously calculates the nearest state based on current velocity and a 30px displacement threshold.
+- **UX Breathing Room**: Implements a 2.5s-3s delay before auto-expanding the panel during location detection to prevent jarring UI shifts.
 
 ### Smart Panel Management
-- **Explore on Map**: Clicking explore minimizes the bottom sheet entirely on mobile (`classList.add('hidden')`) to clear the map view.
-- **Dynamic Visibility**: The consumer search guidance is automatically hidden when results are active on mobile to reclaim vertical space.
-- **Sticky Architecture**: The results panel uses a split layout: `#results-sticky-header` for controls and `#results-content` for scrollable content.
-- **Map Interaction Blocking**: Uses `L.DomEvent.disableClickPropagation` on UI elements to prevent phantom map clicks.
+- **Explore on Map**: Clicking explore or interacting with the map minimizes the bottom sheet entirely to clear the map view.
+- **Typography Compaction**: Aggressive `0.48rem` to `0.75rem` font sizes for mobile to ensure complex administrative hierarchies fit on single lines.
+- **Map Interaction Blocking**: Uses `L.DomEvent.disableClickPropagation` and `disableScrollPropagation` on UI elements to prevent phantom map clicks or scrolling while interacting with the sheet.
 
 ## ✨ UI Architecture & Aesthetic Tokens
 
 - **Glassmorphism**: Implementation uses `backdrop-filter: blur()`, `--glass-bg` (translucent), and `--glass-border`.
+- **Consistent Side-padding**: Enforced 20px-24px padding on desktop and 16px-20px on mobile to maintain visual rhythm.
 - **Sequential Animations**: Uses CSS animations (`fade-in`, `slide-in-bottom`) and transition classes (`panel-transition`) to manage state changes.
-- **Mobile Scrolling**: Specific inner-containers like `.start-card` and `.scrollable-results` use `overflow-y: auto` to ensure content accessibility within height-constrained panels.
+- **Mobile Scrolling**: Specific inner-containers like `.scrollable-results` use `overflow-y: auto` with `-webkit-overflow-scrolling: touch`.
 
 ## 🚀 Deployment
 
@@ -61,5 +113,5 @@ The project is configured for **Firebase Hosting**:
 - **TopoJSON Migration**: Replaced large GeoJSON polygons with TopoJSON, reducing Section boundaries by ~43% and District boundaries by ~76%. Decoding is handled via `topojson-client`.
 - **IndexedDB Persistence**: The 1.8MB administrative index is stored persistently in the user's browser. Lookups are asynchronous and high-speed, eliminating the memory overhead of a 3,000+ entry JavaScript Map.
 - **Pre-computed BBoxes**: Every boundary feature includes a `bbox` property. The Worker skips the expensive vertex-iteration loop during initialization, enabling near-instant GIS engine readiness.
-- **Persistent Caching**: Core assets are and TopoJSON files are stored in the browser's Cache API via `vite-plugin-pwa`.
+- **Persistent Caching**: Core assets and TopoJSON files are stored in the browser's Cache API via `vite-plugin-pwa`.
 - **Off-Main-Thread**: All resolution, sorting, and geometric checks happen in the background Worker, keeping the UI at 60fps even during complex spatial lookups.

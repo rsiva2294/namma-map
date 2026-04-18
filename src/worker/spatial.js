@@ -1,3 +1,6 @@
+import { toTitleCase } from '../utils/format';
+export { toTitleCase };
+
 // Ray-casting algorithm for Point-in-Polygon check
 export function isPointInPolygon(point, vs) {
     const x = point[0], y = point[1];
@@ -46,12 +49,3 @@ export function normalize(val) {
     return String(val || "").trim().toLowerCase();
 }
 
-/**
- * Converts a string to Title Case (e.g., "MADURAI METRO" -> "Madurai Metro")
- */
-export function toTitleCase(str) {
-    if (!str || str === 'N/A') return str;
-    return str.toLowerCase().split(' ').map(word => {
-        return (word.charAt(0).toUpperCase() + word.slice(1));
-    }).join(' ');
-}

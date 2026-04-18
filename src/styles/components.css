@@ -665,7 +665,6 @@
   font-size: 1rem;
   font-weight: 700;
   color: #0f172a;
-  text-transform: uppercase;
 }
 
 .office-confidence {
@@ -739,6 +738,11 @@
   line-height: 1.5;
   text-align: left;
   padding-left: 2px;
+}
+
+.side-panel-footer a:hover {
+  text-decoration: underline !important;
+  opacity: 0.8;
 }
 
 /* Mobile Adjustments */

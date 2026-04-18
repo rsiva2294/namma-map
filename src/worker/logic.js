@@ -119,7 +119,7 @@ export async function processRequest({ lat, lng, consumerNumber, boundaries, off
         boundary: matchedBoundary ? { ...formatJurisdiction(matchedBoundary.properties), geometry: matchedBoundary.geometry } : null,
         office: formattedOffice,
         section_name: toTitleCase(indexEntry?.section_name || matchedBoundary?.properties?.section_na || 'Unknown Section'),
-        subdivision_code: indexEntry?.subdivision_code || matchedBoundary?.properties?.subdivisio || 'N/A',
+        subdivision_code: toTitleCase(indexEntry?.subdivision_code || matchedBoundary?.properties?.subdivisio || 'N/A'),
         distributions: (indexEntry?.distribution_codes || []).slice(0, 5),
         validation: {
             location_section: toTitleCase(matchedBoundary ? (await IDB.get(IDB.stores.ADMIN, buildKey(matchedBoundary.properties.region_cod, matchedBoundary.properties.section_co)))?.section_name || 'N/A' : 'N/A'),

@@ -1,6 +1,7 @@
 /**
  * UI Controller - DOM & Rendering
  */
+import { toTitleCase } from './utils/format';
 import { createIcons, Zap, Locate, Search, MapPin, Navigation, Info, Map, AlertTriangle, RefreshCw, ArrowLeft, Phone, ExternalLink, X } from 'lucide';
 import { SELECTORS } from './constants';
 import { AppState } from './state';
@@ -366,7 +367,7 @@ export const UIController = {
                             <div class="office-name">${office.name}</div>
                             <div class="office-confidence">
                                 <i data-lucide="info"></i>
-                                <span>${data.confidence.toUpperCase()} (${office.distance} km)</span>
+                                <span>${toTitleCase(data.confidence)} (${office.distance} km)</span>
                             </div>
                         </div>
                         <a href="${navUrl}" target="_blank" class="nav-btn" style="width: auto; padding: 10px 16px; margin: 0;">
