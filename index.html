@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TNEB Jurisdiction Finder | Find Tamil Nadu Electricity Office & Boundaries</title>
+    <title>Namma Map | TNEB Jurisdiction Finder</title>
     <meta name="description"
         content="Instantly find your TNEB Section Office and jurisdiction boundary with 100% precision using our Unified Administrative Index and mapping engine.">
     <meta name="keywords" content="TNEB, Tamil Nadu Electricity, Section Finder, Consumer Number Lookup, TNEB Jurisdiction, EB Office Locator, TANGEDCO, Administrative Index, TNEB GIS, Namma Map">
@@ -41,7 +41,7 @@
 
         <!-- Floating UI Overlays -->
 
-        <!-- Search / Info Panel -->
+        <!-- Sidebar Panel (Desktop: Sidebar, Mobile: Bottom Sheet) -->
         <aside class="side-panel" id="side-panel">
             <div class="drag-handle" id="drag-handle"></div>
 
@@ -94,41 +94,20 @@
                 </div>
             </div>
 
-            <!-- Results Panel (Priority Position) -->
+            <!-- Results Panel -->
             <div id="results-panel" class="results-container hidden panel-transition">
-                <!-- Sticky Header Container -->
-                <div id="results-sticky-header" class="sticky-header-wrapper"></div>
-                <!-- Scrollable Content -->
-                <div id="results-content" class="scrollable-results"></div>
-            </div>
-
-            <!-- Quick Links (Dynamic Modes) -->
-            <div id="quick-links-panel" class="panel-section quick-links init-view">
-                <h3>Quick Services</h3>
-                <div class="link-wrapper">
-                    <a href="https://www.tnebnet.org/qwp/qpay" target="_blank" class="service-link" title="Quick Pay">
-                        <i data-lucide="zap"></i>
-                        <span>Quick Pay</span>
-                    </a>
-                    <a href="https://www.tnebltd.gov.in/outages/viewshutdown.xhtml" target="_blank" class="service-link" title="Outage Info">
-                        <i data-lucide="external-link"></i>
-                        <span>Outages</span>
-                    </a>
-                    <a href="tel:9498794987" class="service-link" title="Helpline">
-                        <i data-lucide="phone"></i>
-                        <span>Helpline</span>
-                    </a>
-                    <a href="https://x.com/TANGEDCO_Offcl" target="_blank" class="service-link" title="Social Hub">
-                        <i data-lucide="x"></i>
-                        <span>Social Hub</span>
-                    </a>
+                <div id="results-sticky-header" class="sticky-header-wrapper">
+                    <!-- Populated by JS -->
+                </div>
+                <div id="results-content" class="scrollable-results">
+                    <!-- Populated by JS -->
                 </div>
             </div>
 
-            <!-- Disclaimer Footer -->
-            <footer class="side-panel-footer">
-                <p><strong>Disclaimer:</strong> This website is an independent individual effort for public utility. Not officially affiliated with TANGEDCO.</p>
-                <p style="margin-top: 8px;">Developed by <a href="https://in.linkedin.com/in/sivakaminathan-muthusamy" target="_blank" style="color: var(--accent-primary); text-decoration: none; font-weight: 700;">Sivakaminathan Muthusamy</a></p>
+            <!-- Mobile-only Footer -->
+            <footer class="side-panel-footer mobile-only">
+                <p>Disclaimer: Not affiliated with TANGEDCO.</p>
+                <p>Developed by <a href="https://in.linkedin.com/in/sivakaminathan-muthusamy" target="_blank" style="color: var(--accent-primary); font-weight: 700;">Sivakaminathan Muthusamy</a></p>
             </footer>
         </aside>
 
@@ -160,6 +139,32 @@
                 </div>
             </div>
             <button id="pwa-update-btn" class="pwa-update-btn">Update Now</button>
+        </div>
+
+        <!-- Desktop Floating Info Dock (Bottom Right) -->
+        <div id="desktop-info-dock" class="desktop-info-dock hidden-mobile">
+            <!-- Quick Links -->
+            <div class="quick-links compact-view">
+                <div class="link-wrapper">
+                    <a href="https://www.tnebnet.org/qwp/qpay" target="_blank" class="service-link" title="Quick Pay">
+                        <i data-lucide="zap"></i>
+                    </a>
+                    <a href="https://www.tnebltd.gov.in/outages/viewshutdown.xhtml" target="_blank" class="service-link" title="Outage Info">
+                        <i data-lucide="external-link"></i>
+                    </a>
+                    <a href="tel:9498794987" class="service-link" title="Helpline">
+                        <i data-lucide="phone"></i>
+                    </a>
+                    <a href="https://x.com/TANGEDCO_Offcl" target="_blank" class="service-link" title="Social Hub">
+                        <i data-lucide="x"></i>
+                    </a>
+                </div>
+            </div>
+
+            <footer class="side-panel-footer">
+                <p>Disclaimer: Not affiliated with TANGEDCO.</p>
+                <p>Developed by <a href="https://in.linkedin.com/in/sivakaminathan-muthusamy" target="_blank">Sivakaminathan Muthusamy</a></p>
+            </footer>
         </div>
     </div>
 
