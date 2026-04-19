@@ -16,7 +16,9 @@ export const AppState = {
     districts: [],
     districtLayer: null,
     districtGeoJSON: null, // Lazy loaded full data
-    stateBoundaryGeoJSON: null
+    stateBoundaryGeoJSON: null,
+    searchAreaLayer: null,
+    searchHintActive: false
 };
 
 export function updateState(updates) {

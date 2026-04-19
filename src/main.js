@@ -3,7 +3,7 @@
  */
 import { AppState, updateState } from './state';
 import { SELECTORS, MAP_CONFIG, DATA_URLS } from './constants';
-import { initMap, updateMarker, clearOverlays, drawBoundary, addOfficeMarker, drawDistrictLayer, flashBoundary, isInsideTamilNadu } from './map-engine';
+import { initMap, updateMarker, clearOverlays, drawBoundary, addOfficeMarker, drawDistrictLayer, flashBoundary, isInsideTamilNadu, drawSearchArea } from './map-engine';
 import { UIController } from './ui-controller';
 import { initWorker, requestProcess, requestConsumerSearch, requestPlaceSearch } from './worker-client';
 import { decryptData } from './utils/format';
@@ -97,18 +97,22 @@ async function handlePlaceSelect(place) {
         return;
     }
 
-    // 1. Zoom to the place
-    AppState.map.flyTo(place.center, 15, { animate: true, duration: 2 });
-    
-    // 2. Flash boundary
-    if (place.geometry) {
-        flashBoundary(place.geometry);
+    // 1. Clear previous state
+    clearOverlays();
+    if (AppState.marker) {
+        AppState.map.removeLayer(AppState.marker);
+        updateState({ marker: null });
     }
 
-    // 3. Trigger resolution
-    setTimeout(() => {
-        processLocation(place.center[0], place.center[1], false); // Zoom already happened
-    }, 1500);
+    // 2. Visual Feedback
+    if (place.geometry) {
+        drawSearchArea(place.geometry);
+        UIController.showSearchHint("Tap on the map to select your exact location");
+    } else {
+        AppState.map.flyTo(place.center, 15, { animate: true, duration: 1.5 });
+        UIController.showSearchHint("Select your exact location on the map");
+    }
+    UIController.toggleMobileSheet(false);
 }
 
 async function selectDistrict(district) {
@@ -141,9 +145,12 @@ function processLocation(lat, lng, zoom = false) {
         AppState.map.flyTo([lat, lng], 14, { animate: true });
     }
 
+    UIController.hideSearchHint();
+
     UIController.togglePanel(SELECTORS.SEARCH_CARD, false);
     document.body.classList.add('showing-results');
     UIController.togglePanel(SELECTORS.RESULTS_PANEL, true);
+    UIController.toggleMobileSheet(false);
 
     const ql = document.getElementById('quick-links-panel');
     if (ql) {
@@ -174,11 +181,13 @@ function processConsumerSearch(number) {
         ql.classList.add('compact-view');
     }
 
+    UIController.toggleMobileSheet(false);
     requestConsumerSearch(number, AppState.currentLocation);
 }
 
 function resetApp(zoom = true) {
     clearOverlays();
+    UIController.hideSearchHint();
     if (AppState.marker) {
         AppState.map.removeLayer(AppState.marker);
         updateState({ marker: null });

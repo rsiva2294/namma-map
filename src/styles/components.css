@@ -585,6 +585,45 @@
   animation: slide-up-fade 0.3s ease-out;
 }
 
+.search-hint {
+    position: fixed;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(245, 158, 11, 0.9);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 10px 24px;
+    border-radius: 50px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 2000;
+    box-shadow: 0 10px 25px rgba(245, 158, 11, 0.3);
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: white;
+    animation: slide-down-fade 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.search-hint i {
+    width: 16px;
+    height: 16px;
+    animation: pulse 2s infinite;
+}
+
+@media (max-width: 640px) {
+    .search-hint {
+        top: auto;
+        bottom: 120px;
+        width: 85%;
+        justify-content: center;
+        padding: 12px 20px;
+        font-size: 0.8rem;
+    }
+}
+
 /* Markers */
 .zap-icon-bg {
   width: 32px;

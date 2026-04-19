@@ -80,8 +80,10 @@ export function updateMarker(lat, lng, onDragEnd) {
 export function clearOverlays() {
     if (AppState.boundaryLayer) AppState.map.removeLayer(AppState.boundaryLayer);
     if (AppState.officeMarker) AppState.map.removeLayer(AppState.officeMarker);
+    if (AppState.searchAreaLayer) AppState.map.removeLayer(AppState.searchAreaLayer);
     AppState.boundaryLayer = null;
     AppState.officeMarker = null;
+    AppState.searchAreaLayer = null;
 }
 
 export function drawBoundary(geometry) {
@@ -154,6 +156,33 @@ export function flashBoundary(geometry) {
             }
         }, 40);
     }, 1200);
+}
+
+export function drawSearchArea(geometry) {
+    if (!geometry) return;
+    
+    if (AppState.searchAreaLayer) {
+        AppState.map.removeLayer(AppState.searchAreaLayer);
+    }
+
+    AppState.searchAreaLayer = L.geoJSON({ type: 'Feature', geometry: geometry }, {
+        style: {
+            color: '#f59e0b',
+            weight: 3,
+            fillOpacity: 0.1, // Light tint as requested
+            fillColor: '#fbbf24',
+            dashArray: '8, 8',
+            interactive: false
+        }
+    }).addTo(AppState.map);
+
+    const isMobile = window.innerWidth <= 640;
+    AppState.map.fitBounds(AppState.searchAreaLayer.getBounds(), {
+        padding: isMobile ? [40, 40, 180, 40] : [100, 100, 100, 100],
+        maxZoom: 15,
+        animate: true,
+        duration: 1.5
+    });
 }
 
 /**

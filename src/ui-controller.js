@@ -413,5 +413,20 @@ export const UIController = {
         header.innerHTML = '<div class="results-toolbar"><button class="back-link-btn" onclick="window.resetApp()"><i data-lucide="arrow-left"></i><span>Back</span></button></div>';
         content.innerHTML = `<div class="glass-panel error-card card fade-in"><h3>${title}</h3><p>${msg}</p></div>`;
         this.initIcons();
+    },
+
+    showSearchHint(msg) {
+        const hint = document.getElementById('search-hint');
+        if (!hint) return;
+        const span = hint.querySelector('span');
+        if (span) span.innerText = msg;
+        hint.classList.remove('hidden');
+        AppState.searchHintActive = true;
+    },
+
+    hideSearchHint() {
+        const hint = document.getElementById('search-hint');
+        if (hint) hint.classList.add('hidden');
+        AppState.searchHintActive = false;
     }
 };
