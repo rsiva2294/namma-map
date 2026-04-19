@@ -2,7 +2,7 @@
  * UI Controller - DOM & Rendering
  */
 import { toTitleCase } from './utils/format';
-import { createIcons, Zap, Locate, Search, MapPin, Navigation, Info, Map, AlertTriangle, RefreshCw, ArrowLeft, Phone, ExternalLink, X } from 'lucide';
+import { createIcons, Zap, Locate, Search, MapPin, Navigation, Info, Map, AlertTriangle, RefreshCw, ArrowLeft, Phone, ExternalLink, X, Link2 } from 'lucide';
 import { SELECTORS } from './constants';
 import { AppState } from './state';
 import L from 'leaflet';
@@ -10,7 +10,7 @@ import L from 'leaflet';
 export const UIController = {
     initIcons() {
         createIcons({
-            icons: { Zap, Locate, Search, MapPin, Navigation, Info, Map, AlertTriangle, RefreshCw, ArrowLeft, Phone, ExternalLink, X }
+            icons: { Zap, Locate, Search, MapPin, Navigation, Info, Map, AlertTriangle, RefreshCw, ArrowLeft, Phone, ExternalLink, X, Link2 }
         });
     },
 

@@ -1049,14 +1049,34 @@
     padding: 24px 20px;
 }
 
+.modal-body .quick-links {
+    display: block !important;
+    margin: 0 0 24px 0;
+    padding: 0;
+    border: none;
+    background: transparent;
+}
+
+.modal-body .quick-links h3 {
+    font-size: 0.7rem;
+    margin-bottom: 12px;
+    color: var(--text-muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
 .modal-footer-info {
-    margin-top: 24px;
+    margin-top: 0;
     padding-top: 20px;
     border-top: 1px solid rgba(0,0,0,0.05);
 }
 
 .modal-footer-info p {
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     color: var(--text-muted);
-    line-height: 1.6;
+    line-height: 1.5;
+}
+
+.modal-footer-info a {
+    white-space: nowrap;
 }
