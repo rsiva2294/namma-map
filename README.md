@@ -1,4 +1,7 @@
-# TNEB Jurisdiction Finder
+# Namma Map: TNEB Jurisdiction Finder
+
+[![GitHub Repo](https://img.shields.io/badge/GitHub-namma--map-blue?logo=github)](https://github.com/rsiva2294/namma-map)
+[![Live Demo](https://img.shields.io/badge/Live-nammamap.web.app-green)](https://nammamap.web.app)
 
 A high-performance, privacy-first GIS application designed to help Tamil Nadu electricity consumers identify their exact Section Office and jurisdiction boundaries.
 
@@ -12,11 +15,12 @@ A high-performance, privacy-first GIS application designed to help Tamil Nadu el
 - **IndexedDB-Backed Indexing**: Offloads the 1.8MB administrative index from RAM to **IndexedDB**, ensuring near-zero memory footprint and instant startup on subsequent visits.
 - **Privacy First**: All GIS indexing and matching happen locally in your browser. No consumer data or location information ever leaves your device.
 - **Premium Mobile Experience**:
-  - **3-Stage Adaptive Bottom Sheet**: Native-feeling gesture controls that snap between **Minimized** (peek), **Compact** (results focus), and **Expanded** (full detail) states.
+  - **3-Stage Adaptive Bottom Sheet**: Native-feeling gesture controls with an **Integrated Drag Handle** that stays accessible across both search and results views.
   - **Aggressive Typography Compaction**: Ultra-efficient use of screen real estate with high-density typography and consistent side-padding for small devices.
   - **Decoupled Map Navigation**: Fluid map exploration with zoom persistence—navigation only adjusts when necessary for context.
   - **Sticky Results Header**: Core actions (Back, Selection Info) remain pinned to the top while scrolling through jurisdiction details.
   - **Quick Navigation**: Instant Google Maps directions from both map popups and detail cards.
+- **Offline-First PWA**: High-performance service worker caching with a **Manual Update Prompt** to ensure users always have the latest GIS boundaries and office data.
 
 ## 🎨 Visual Excellence
 

@@ -76,13 +76,19 @@ Hydrated from `PIN_code_Boundary` for real-time address/PIN search.
 The application implements a custom **3-stage adaptive bottom sheet** for mobile devices (`initDraggableSheet`) with the following logic:
 
 ### Draggable Sheet Logic
-- **Real-time Tracking**: Uses `touchstart` and `touchmove` to track vertical finger movement on the drag handle.
+- **Real-time Tracking**: Uses `touchstart` and `touchmove` to track vertical finger movement on the shared drag handle.
+- **Universal Accessibility**: The drag handle is positioned at the root of the `side-panel` to ensure it remains visible even when switching between search and result cards.
 - **3-Stage Snapping**:
   - **Minimized (< 120px)**: Snaps to a "peek" state showing only the drag handle and core search status.
-  - **Compact (Middle)**: Default state when results are shown but not full-screen.
+  - **Compact (300px default)**: Optimized height to ensure search inputs and results are immediately visible on most mobile screens.
   - **Expanded (> 50% screen)**: Snaps to 85vh for full-detail reading.
 - **Threshold Snapping**: Autonomously calculates the nearest state based on current velocity and a 30px displacement threshold.
 - **UX Breathing Room**: Implements a 2.5s-3s delay before auto-expanding the panel during location detection to prevent jarring UI shifts.
+
+### PWA Update System
+- **Update Detection**: The app monitors for new service worker versions deployed to Firebase.
+- **Manual Prompt**: Instead of silent background updates, a premium "Update Available" toast notifies users and allows them to refresh manually to ensure data parity.
+- **Registration Flow**: Managed via `src/pwa.js` using the `virtual:pwa-register` module.
 
 ### Smart Panel Management
 - **Explore on Map**: Clicking explore or interacting with the map minimizes the bottom sheet entirely to clear the map view.
@@ -105,7 +111,11 @@ The project is configured for **Firebase Hosting**:
 - **Deployment Command**:
   ```bash
   npm run build
-  npx firebase-tools deploy
+  firebase deploy
+  ```
+- **Remote Repo**:
+  ```bash
+  git push origin master
   ```
 
 ## 🚀 Performance Optimization
