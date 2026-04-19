@@ -58,6 +58,30 @@ export const UIController = {
         this.initTabs();
         this.initDraggableSheet();
         this.setupPlaceSearch(onPlaceSearch, onPlaceSelect);
+        this.initInfoModal();
+    },
+
+    initInfoModal() {
+        const btn = document.getElementById('info-modal-btn');
+        const modal = document.getElementById('info-modal');
+        const closeBtn = document.getElementById('close-info-modal');
+
+        if (btn && modal) {
+            btn.onclick = () => {
+                modal.classList.remove('hidden');
+                document.body.style.overflow = 'hidden'; // Prevent scroll
+            };
+
+            const closeModal = () => {
+                modal.classList.add('hidden');
+                document.body.style.overflow = '';
+            };
+
+            if (closeBtn) closeBtn.onclick = closeModal;
+            modal.onclick = (e) => {
+                if (e.target === modal) closeModal();
+            };
+        }
     },
 
     initTabs() {

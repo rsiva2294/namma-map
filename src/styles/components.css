@@ -58,7 +58,39 @@
 .primary-btn:hover {
   background: var(--accent-secondary);
   transform: translateY(-2px);
-  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.info-btn {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  width: 44px;
+  height: 44px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  color: var(--accent-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1500;
+  box-shadow: var(--glass-shadow);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.info-btn:hover {
+  background: var(--accent-primary);
+  color: white;
+  transform: scale(1.1);
+}
+
+.info-btn i {
+  width: 22px;
+  height: 22px;
 }
 
 .secondary-btn {
@@ -965,4 +997,66 @@
   .pwa-toast-text strong { font-size: 0.8rem; }
   .pwa-toast-text span { font-size: 0.65rem; }
   .pwa-update-btn { padding: 6px 12px; font-size: 0.75rem; }
+}
+
+/* Modal Styling */
+.modal-card {
+    width: 90%;
+    max-width: 400px;
+    padding: 0;
+    overflow: hidden;
+    animation: zoom-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes zoom-in {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 20px;
+    background: linear-gradient(to right, rgba(37, 99, 235, 0.05), transparent);
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.modal-header h3 {
+    flex: 1;
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--text-main);
+}
+
+.close-modal-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 8px;
+    transition: all 0.2s;
+    display: flex;
+}
+
+.close-modal-btn:hover {
+    background: rgba(0,0,0,0.05);
+    color: var(--text-main);
+}
+
+.modal-body {
+    padding: 24px 20px;
+}
+
+.modal-footer-info {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(0,0,0,0.05);
+}
+
+.modal-footer-info p {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    line-height: 1.6;
 }

@@ -125,6 +125,54 @@
             <span id="status-text">Detecting Location...</span>
         </div>
 
+        <!-- Mobile More Info Button -->
+        <button id="info-modal-btn" class="info-btn mobile-only" title="About & Links">
+            <i data-lucide="link"></i>
+        </button>
+
+        <!-- About & Services Modal -->
+        <div id="info-modal" class="overlay hidden">
+            <div class="glass-panel modal-card info-modal-content">
+                <header class="modal-header">
+                    <div class="brand-logo" style="width: 32px; height: 32px; font-size: 0.8rem;">
+                        <i data-lucide="zap"></i>
+                    </div>
+                    <h3>About & Services</h3>
+                    <button class="close-modal-btn" id="close-info-modal">
+                        <i data-lucide="x"></i>
+                    </button>
+                </header>
+                <div class="modal-body">
+                    <div class="quick-links init-view">
+                        <h3>Quick Services</h3>
+                        <div class="link-wrapper" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+                            <a href="https://www.tnebnet.org/qwp/qpay" target="_blank" class="service-link" title="Quick Pay">
+                                <i data-lucide="zap"></i>
+                                <span>Quick Pay</span>
+                            </a>
+                            <a href="https://www.tnebltd.gov.in/outages/viewshutdown.xhtml" target="_blank" class="service-link" title="Outage Info">
+                                <i data-lucide="external-link"></i>
+                                <span>Outages</span>
+                            </a>
+                            <a href="tel:9498794987" class="service-link" title="Helpline">
+                                <i data-lucide="phone"></i>
+                                <span>Helpline</span>
+                            </a>
+                            <a href="https://x.com/TANGEDCO_Offcl" target="_blank" class="service-link" title="Social Hub">
+                                <i data-lucide="x"></i>
+                                <span>Social Hub</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer-info">
+                        <p><strong>Disclaimer:</strong> This website is an independent individual effort for public utility. Not officially affiliated with TANGEDCO.</p>
+                        <p style="margin-top: 12px; font-size: 0.9rem;">Developed by <a href="https://in.linkedin.com/in/sivakaminathan-muthusamy" target="_blank" style="color: var(--accent-primary); font-weight: 700;">Sivakaminathan Muthusamy</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <button id="fab-gps" class="fab hidden" title="Use My Location">
             <i data-lucide="locate"></i>
         </button>
