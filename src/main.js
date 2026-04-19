@@ -7,9 +7,11 @@ import { initMap, updateMarker, clearOverlays, drawBoundary, addOfficeMarker, dr
 import { UIController } from './ui-controller';
 import { initWorker, requestProcess, requestConsumerSearch, requestPlaceSearch } from './worker-client';
 import { decryptData } from './utils/format';
+import { initPWA } from './pwa';
 import { feature } from 'topojson-client';
 
 async function init() {
+    initPWA();
     UIController.initIcons();
     
     // 1. Init Map

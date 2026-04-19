@@ -47,6 +47,15 @@
 
             <!-- Unified Search Card -->
             <div id="search-card" class="glass-panel search-card">
+                <header class="search-branding">
+                    <div class="brand-logo">
+                        <i data-lucide="zap"></i>
+                    </div>
+                    <div class="brand-text">
+                        <h1>TNEB</h1>
+                        <span>Jurisdiction Finder</span>
+                    </div>
+                </header>
                 <div class="tabs-header">
                     <button class="tab-btn active" data-tab="locality-tab">
                         <i data-lucide="map-pin"></i>
@@ -140,6 +149,18 @@
         <button id="fab-gps" class="fab hidden" title="Use My Location">
             <i data-lucide="locate"></i>
         </button>
+
+        <!-- PWA Update Notification -->
+        <div id="pwa-update-toast" class="pwa-toast hidden">
+            <div class="pwa-toast-content">
+                <i data-lucide="refresh-cw" class="icon-spin"></i>
+                <div class="pwa-toast-text">
+                    <strong>Update Available</strong>
+                    <span>New version is ready to install.</span>
+                </div>
+            </div>
+            <button id="pwa-update-btn" class="pwa-update-btn">Update Now</button>
+        </div>
     </div>
 
     <!-- Scripts -->
