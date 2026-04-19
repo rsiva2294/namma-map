@@ -98,7 +98,7 @@ The application implements a custom **3-stage adaptive bottom sheet** for mobile
 ## ✨ UI Architecture & Aesthetic Tokens
 
 - **Glassmorphism**: Implementation uses `backdrop-filter: blur()`, `--glass-bg` (translucent), and `--glass-border`.
-- **Consistent Side-padding**: Enforced 20px-24px padding on desktop and 16px-20px on mobile to maintain visual rhythm.
+- **Consistent Side-padding**: Enforced 20px-24px padding on desktop (within a 480px panel) and 16px-20px on mobile to maintain visual rhythm.
 - **Sequential Animations**: Uses CSS animations (`fade-in`, `slide-in-bottom`) and transition classes (`panel-transition`) to manage state changes.
 - **Mobile Scrolling**: Specific inner-containers like `.scrollable-results` use `overflow-y: auto` with `-webkit-overflow-scrolling: touch`.
 
